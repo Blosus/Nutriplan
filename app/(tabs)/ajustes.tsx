@@ -1,0 +1,243 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useState } from "react";
+import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "@/hooks/theme-context";
+
+export default function AjustesScreen() {
+  const { colors, theme, toggleTheme } = useTheme();
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [vibracionEnabled, setVibracionEnabled] = useState(true);
+
+  const handleThemeToggle = async (value: boolean) => {
+    if (value !== (theme === "dark")) {
+      await toggleTheme();
+    }
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity activeOpacity={0.7} style={[styles.backButton, { backgroundColor: colors.surface }]} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={28} color={colors.accent} />
+        </TouchableOpacity>
+        
+        <View style={styles.headerTitleContainer}>
+          <Text style={[styles.stepIndicator, { backgroundColor: colors.surface, color: colors.accent }]}>Configuración</Text>
+        </View>
+        
+        <View style={styles.headerPlaceholder} />
+      </View>
+
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Notificaciones */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.accent }]}>Notificaciones</Text>
+          
+          <View style={[styles.settingItem, { backgroundColor: colors.surface }]}>
+            <View style={styles.settingInfo}>
+              <Ionicons name="notifications-outline" size={20} color={colors.accent} />
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Notificaciones</Text>
+            </View>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={setNotificationsEnabled}
+              trackColor={{ false: colors.border, true: colors.accent + "50" }}
+              thumbColor={notificationsEnabled ? colors.accent : colors.textSecondary}
+            />
+          </View>
+
+          <View style={[styles.settingItem, { backgroundColor: colors.surface }]}>
+            <View style={styles.settingInfo}>
+              <Ionicons name="volume-high-outline" size={20} color={colors.accent} />
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Sonido</Text>
+            </View>
+            <Switch
+              value={soundEnabled}
+              onValueChange={setSoundEnabled}
+              trackColor={{ false: colors.border, true: colors.accent + "50" }}
+              thumbColor={soundEnabled ? colors.accent : colors.textSecondary}
+              disabled={!notificationsEnabled}
+            />
+          </View>
+
+          <View style={[styles.settingItem, styles.settingItemLast, { backgroundColor: colors.surface }]}>
+            <View style={styles.settingInfo}>
+              <Ionicons name="phone-portrait-outline" size={20} color={colors.accent} />
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Vibración</Text>
+            </View>
+            <Switch
+              value={vibracionEnabled}
+              onValueChange={setVibracionEnabled}
+              trackColor={{ false: colors.border, true: colors.accent + "50" }}
+              thumbColor={vibracionEnabled ? colors.accent : colors.textSecondary}
+              disabled={!notificationsEnabled}
+            />
+          </View>
+        </View>
+
+        {/* Apariencia */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.accent }]}>Apariencia</Text>
+          
+          <View style={[styles.settingItem, styles.settingItemLast, { backgroundColor: colors.surface }]}>
+            <View style={styles.settingInfo}>
+              <Ionicons name={theme === "dark" ? "moon" : "sunny"} size={20} color={colors.accent} />
+              <Text style={[styles.settingLabel, { color: colors.text }]}>{theme === "dark" ? "Modo Oscuro" : "Modo Claro"}</Text>
+            </View>
+            <Switch
+              value={theme === "dark"}
+              onValueChange={handleThemeToggle}
+              trackColor={{ false: colors.border, true: colors.accent + "50" }}
+              thumbColor={theme === "dark" ? colors.accent : colors.textSecondary}
+            />
+          </View>
+        </View>
+
+        {/* Información */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.accent }]}>Información</Text>
+          
+          <View style={[styles.infoItem, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.infoLabel, { color: colors.text }]}>Versión</Text>
+            <Text style={[styles.infoValue, { color: colors.accent }]}>1.0.0</Text>
+          </View>
+
+          <View style={[styles.infoItem, styles.settingItemLast, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.infoLabel, { color: colors.text }]}>Desarrollado por</Text>
+            <Text style={[styles.infoValue, { color: colors.accent }]}>NutriFit Team</Text>
+          </View>
+        </View>
+
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#121212",
+    paddingTop: 20,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
+    paddingTop: 40,
+    paddingBottom: 15,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1E1E1E",
+  },
+  backButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#1E1E1E",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  headerTitleContainer: {
+    alignItems: "center",
+    flex: 1,
+  },
+  headerTitle: {
+    color: "#FFF8E1",
+    fontSize: 24,
+    fontWeight: "700",
+  },
+  stepIndicator: {
+    backgroundColor: "#1E1E1E",
+    color: "#FFD54F",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 5,
+  },
+  headerPlaceholder: {
+    width: 40,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+  },
+  section: {
+    marginBottom: 30,
+  },
+  sectionTitle: {
+    color: "#FFD54F",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+  settingItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    backgroundColor: "#1E1E1E",
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  settingItemLast: {
+    marginBottom: 0,
+  },
+  settingInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  settingLabel: {
+    color: "#FFF8E1",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  infoItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    backgroundColor: "#1E1E1E",
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  infoLabel: {
+    color: "#FFF8E1",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  infoValue: {
+    color: "#FFD54F",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  dangerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    backgroundColor: "rgba(255, 82, 82, 0.1)",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FF5252",
+  },
+  dangerButtonText: {
+    color: "#FF5252",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+});

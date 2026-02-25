@@ -5,6 +5,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useState } from "react";
 import { Dimensions, FlatList, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
 import { LineChart, ProgressChart } from "react-native-chart-kit";
+import { useTheme } from "@/hooks/theme-context";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -36,6 +37,8 @@ type DietProgress = {
 };
 
 export default function HomeScreen() {
+  const { colors, theme } = useTheme();
+  const styles = getDynamicStyles(colors);
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [activeTab, setActiveTab] = useState<'alarms' | 'diet'>('alarms');
   const [dietProgress, setDietProgress] = useState<DietProgress>({
@@ -150,7 +153,7 @@ export default function HomeScreen() {
       {/* Header Dieta */}
       <View style={styles.dietHeader}>
         <View style={styles.dietHeaderTitle}>
-          <FontAwesome5 name="apple-alt" size={24} color="#FFD54F" />
+          <FontAwesome5 name="apple-alt" size={24} color={theme === 'dark' ? colors.accent : colors.text} />
           <Text style={styles.dietHeaderText}>Mi Progreso Dietético</Text>
         </View>
         <Text style={styles.dietDate}>Actualizado: {dietProgress.lastUpdated}</Text>
@@ -160,7 +163,7 @@ export default function HomeScreen() {
       <View style={styles.streakCard}>
         <View style={styles.streakInfo}>
           <View style={styles.streakIcon}>
-            <FontAwesome5 name="fire" size={24} color="#FFD54F" />
+            <FontAwesome5 name="fire" size={24} color={theme === 'dark' ? colors.accent : colors.text} />
           </View>
           <View>
             <Text style={styles.streakLabel}>Racha Actual</Text>
@@ -183,19 +186,19 @@ export default function HomeScreen() {
             strokeWidth={12}
             radius={40}
             chartConfig={{
-              backgroundColor: "#1E1E1E",
-              backgroundGradientFrom: "#1E1E1E",
-              backgroundGradientTo: "#1E1E1E",
+              backgroundColor: colors.surface,
+              backgroundGradientFrom: colors.surface,
+              backgroundGradientTo: colors.surface,
               decimalPlaces: 0,
               color: (opacity = 1, index) => {
-                const colors = [
+                const chartColors = [
                   `rgba(255, 213, 79, ${opacity})`, // Calorías - Amarillo
                   `rgba(66, 165, 245, ${opacity})`, // Agua - Azul
                   `rgba(102, 187, 106, ${opacity})`  // Comidas - Verde
                 ];
-                return colors[index];
+                return chartColors[index];
               },
-              labelColor: () => "#FFF8E1",
+              labelColor: () => colors.text,
               style: {
                 borderRadius: 16
               }
@@ -206,7 +209,7 @@ export default function HomeScreen() {
         </View>
         <View style={styles.progressStats}>
           <View style={styles.progressStat}>
-            <View style={[styles.statDot, { backgroundColor: "#FFD54F" }]} />
+            <View style={[styles.statDot, { backgroundColor: theme === 'dark' ? colors.accent : colors.text }]} />
             <Text style={styles.statLabel}>Calorías</Text>
             <Text style={styles.statValue}>
               {dietProgress.calories.consumed}/{dietProgress.calories.target} kcal
@@ -226,57 +229,6 @@ export default function HomeScreen() {
               {dietProgress.meals.completed}/{dietProgress.meals.total}
             </Text>
           </View>
-        </View>
-      </View>
-
-      {/* Gráfico de Línea - Semanal */}
-      <View style={styles.sectionCard}>
-        <View style={styles.chartHeader}>
-          <Text style={styles.sectionTitle}>Calorías Consumidas</Text>
-          <Text style={styles.chartSubtitle}>Últimos 7 días</Text>
-        </View>
-        <LineChart
-          data={calorieData}
-          width={screenWidth - 80}
-          height={200}
-          chartConfig={{
-            backgroundColor: "#1E1E1E",
-            backgroundGradientFrom: "#1E1E1E",
-            backgroundGradientTo: "#1E1E1E",
-            decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(255, 213, 79, ${opacity})`,
-            labelColor: () => "#FFF8E1",
-            style: {
-              borderRadius: 16
-            },
-            propsForDots: {
-              r: "6",
-              strokeWidth: "2",
-              stroke: "#121212"
-            },
-            propsForBackgroundLines: {
-              strokeDasharray: "",
-              stroke: "#333333",
-              strokeWidth: 1
-            }
-          }}
-          bezier
-          style={styles.lineChart}
-          withInnerLines={true}
-          withOuterLines={false}
-          withVerticalLines={true}
-          withHorizontalLines={true}
-          fromZero={false}
-        />
-        <View style={styles.chartStats}>
-          <Text style={styles.chartStat}>
-            <Text style={styles.chartStatLabel}>Promedio: </Text>
-            <Text style={styles.chartStatValue}>1850 kcal</Text>
-          </Text>
-          <Text style={styles.chartStat}>
-            <Text style={styles.chartStatLabel}>Objetivo: </Text>
-            <Text style={styles.chartStatValue}>{dietProgress.calories.target} kcal</Text>
-          </Text>
         </View>
       </View>
 
@@ -341,14 +293,66 @@ export default function HomeScreen() {
         
         <TouchableOpacity style={styles.detailButton}>
           <Text style={styles.detailButtonText}>Ver Detalles Completos</Text>
-          <Ionicons name="arrow-forward" size={18} color="#FFD54F" />
+          <Ionicons name="arrow-forward" size={18} color={theme === 'dark' ? colors.accent : colors.text} />
         </TouchableOpacity>
+      </View>
+
+
+      {/* Gráfico de Línea - Semanal */}
+      <View style={styles.sectionCard}>
+        <View style={styles.chartHeader}>
+          <Text style={styles.sectionTitle}>Calorías Consumidas</Text>
+          <Text style={styles.chartSubtitle}>Últimos 7 días</Text>
+        </View>
+        <LineChart
+          data={calorieData}
+          width={screenWidth - 80}
+          height={200}
+          chartConfig={{
+            backgroundColor: colors.surface,
+            backgroundGradientFrom: colors.surface,
+            backgroundGradientTo: colors.surface,
+            decimalPlaces: 0,
+            color: (opacity = 1) => `rgba(255, 213, 79, ${opacity})`,
+            labelColor: () => colors.text,
+            style: {
+              borderRadius: 16
+            },
+            propsForDots: {
+              r: "6",
+              strokeWidth: "2",
+              stroke: colors.surface
+            },
+            propsForBackgroundLines: {
+              strokeDasharray: "",
+              stroke: colors.border,
+              strokeWidth: 1
+            }
+          }}
+          bezier
+          style={styles.lineChart}
+          withInnerLines={true}
+          withOuterLines={false}
+          withVerticalLines={true}
+          withHorizontalLines={true}
+          fromZero={false}
+        />
+        <View style={styles.chartStats}>
+          <Text style={styles.chartStat}>
+            <Text style={styles.chartStatLabel}>Promedio: </Text>
+            <Text style={styles.chartStatValue}>1850 kcal</Text>
+          </Text>
+          <Text style={styles.chartStat}>
+            <Text style={styles.chartStatLabel}>Objetivo: </Text>
+            <Text style={styles.chartStatValue}>{dietProgress.calories.target} kcal</Text>
+          </Text>
+        </View>
       </View>
 
       {}
       <View style={styles.tipCard}>
         <View style={styles.tipIcon}>
-          <Ionicons name="bulb-outline" size={24} color="#FFD54F" />
+          <Ionicons name="bulb-outline" size={24} color={theme === 'dark' ? colors.accent : colors.text} />
         </View>
         <View style={styles.tipContent}>
           <Text style={styles.tipTitle}>Consejo del Día</Text>
@@ -364,8 +368,8 @@ export default function HomeScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#FFD54F" />
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push("ajustes")}>
+          <Ionicons name="cog" size={24} color={colors.accent} />
         </TouchableOpacity>
         
         <View style={styles.headerTitleContainer}>
@@ -381,7 +385,7 @@ export default function HomeScreen() {
           style={styles.addButton}
           onPress={() => activeTab === 'alarms' ? router.push("newAlarm") : null}
         >
-          <Ionicons name={activeTab === 'alarms' ? "add-circle" : "refresh"} size={32} color="#FFD54F" />
+          <Ionicons name={activeTab === 'alarms' ? "add-circle" : "refresh"} size={32} color={colors.accent} />
         </TouchableOpacity>
       </View>
 
@@ -448,7 +452,7 @@ export default function HomeScreen() {
           {alarms.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconContainer}>
-                <Ionicons name="alarm-outline" size={60} color="#FFD54F" />
+                <Ionicons name="alarm-outline" size={60} color={theme === 'dark' ? colors.accent : colors.text} />
               </View>
               <Text style={styles.emptyStateTitle}>No hay alarmas</Text>
               <Text style={styles.emptyStateText}>
@@ -891,7 +895,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   chartSubtitle: {
-    color: "#888888",
+    color: "#FFFFFFFF",
     fontSize: 14,
   },
   progressChartContainer: {
@@ -1024,3 +1028,494 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+
+function getDynamicStyles(colors: any) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingTop: 50,
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 20,
+      paddingBottom: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    headerTitleContainer: {
+      alignItems: "center",
+      flex: 1,
+    },
+    headerTitle: {
+      color: colors.text,
+      fontSize: 24,
+      fontWeight: "700",
+    },
+    stepIndicator: {
+      backgroundColor: colors.surface,
+      color: colors.accent,
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderRadius: 20,
+      fontSize: 12,
+      fontWeight: "600",
+      marginTop: 5,
+    },
+    addButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    tabsContainer: {
+      flexDirection: "row",
+      backgroundColor: colors.surface,
+      borderRadius: 50,
+      padding: 4,
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: colors.accent + "1A",
+    },
+    tab: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      paddingVertical: 12,
+      borderRadius: 50,
+    },
+    activeTab: {
+      backgroundColor: colors.accent,
+    },
+    tabText: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    activeTabText: {
+      color: colors.background,
+    },
+    summaryContainer: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 20,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.accent + "1A",
+    },
+    summaryItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 15,
+    },
+    summaryIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    summaryIconActive: {
+      backgroundColor: colors.accent,
+    },
+    summaryIconTotal: {
+      backgroundColor: "#4CAF50",
+    },
+    summaryLabel: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: "500",
+    },
+    summaryValue: {
+      color: colors.text,
+      fontSize: 24,
+      fontWeight: "700",
+    },
+    summaryDivider: {
+      width: 1,
+      height: 40,
+      backgroundColor: colors.border,
+    },
+    listContent: {
+      paddingBottom: 20,
+    },
+    alarmCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      marginBottom: 12,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    alarmCardActive: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accent + "08",
+    },
+    alarmCardInactive: {
+      borderColor: colors.border,
+    },
+    alarmTimeContainer: {
+      marginBottom: 15,
+    },
+    alarmTimeHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 10,
+    },
+    alarmTime: {
+      fontSize: 28,
+      fontWeight: "700",
+      letterSpacing: 0.5,
+    },
+    alarmTimeActive: {
+      color: colors.accent,
+    },
+    alarmTimeInactive: {
+      color: colors.textSecondary,
+    },
+    alarmStatus: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    alarmStatusActive: {
+      backgroundColor: "rgba(76, 175, 80, 0.2)",
+    },
+    alarmStatusInactive: {
+      backgroundColor: "rgba(244, 67, 54, 0.2)",
+    },
+    alarmStatusText: {
+      fontSize: 10,
+      fontWeight: "700",
+    },
+    alarmStatusTextActive: {
+      color: "#4CAF50",
+    },
+    alarmStatusTextInactive: {
+      color: "#F44336",
+    },
+    alarmDetails: {
+      gap: 6,
+    },
+    alarmName: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    descriptionContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    alarmDescription: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      flex: 1,
+    },
+    alarmControls: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: 15,
+    },
+    switchContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    switchLabel: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: "500",
+    },
+    deleteButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: "rgba(244, 67, 54, 0.1)",
+      justifyContent: "center",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: "rgba(244, 67, 54, 0.3)",
+    },
+    emptyState: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 40,
+      marginTop: 40,
+    },
+    emptyIconContainer: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: colors.accent + "1A",
+    },
+    emptyStateTitle: {
+      color: colors.text,
+      fontSize: 22,
+      fontWeight: "700",
+      marginBottom: 10,
+      textAlign: "center",
+    },
+    emptyStateText: {
+      color: colors.textSecondary,
+      fontSize: 16,
+      textAlign: "center",
+      marginBottom: 25,
+      lineHeight: 22,
+    },
+    emptyStateButton: {
+      backgroundColor: colors.accent,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+      paddingHorizontal: 25,
+      paddingVertical: 15,
+      borderRadius: 50,
+    },
+    emptyStateButtonText: {
+      color: colors.background,
+      fontSize: 16,
+      fontWeight: "700",
+    },
+    dietContent: {
+      paddingBottom: 100,
+    },
+    dietHeader: {
+      marginBottom: 20,
+    },
+    dietHeaderTitle: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginBottom: 8,
+    },
+    dietHeaderText: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "700",
+    },
+    dietDate: {
+      color: colors.textSecondary,
+      fontSize: 14,
+    },
+    streakCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: 20,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: colors.accent + "1A",
+    },
+    streakInfo: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 15,
+    },
+    streakIcon: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: colors.accent + "1A",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    streakLabel: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: "500",
+    },
+    streakValue: {
+      color: colors.accent,
+      fontSize: 28,
+      fontWeight: "700",
+    },
+    editButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.border,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    sectionCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: colors.accent + "1A",
+    },
+    sectionTitle: {
+      color: colors.accent,
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 15,
+    },
+    chartHeader: {
+      marginBottom: 10,
+    },
+    lineChart: {
+      marginVertical: 16,
+      alignSelf: "center",
+    },
+    progressChart: {
+      marginVertical: 16,
+      alignSelf: "center",
+    },
+    progressChartContainer: {
+      alignItems: "center",
+      marginBottom: 20,
+    },
+    progressStats: {
+      gap: 12,
+    },
+    progressStat: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    statDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+    },
+    statLabel: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: "600",
+    },
+    statValue: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: "700",
+    },
+    chartStats: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 15,
+      gap: 10,
+    },
+    chartStat: {
+      color: colors.text,
+      fontSize: 14,
+    },
+    chartStatLabel: {
+      color: colors.textSecondary,
+    },
+    chartStatValue: {
+      color: colors.accent,
+      fontWeight: "600",
+    },
+    quickControls: {
+      gap: 20,
+      marginBottom: 20,
+    },
+    quickControl: {
+      gap: 10,
+    },
+    controlLabel: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    controlButtons: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    controlButton: {
+      flex: 1,
+      backgroundColor: colors.border,
+      padding: 12,
+      borderRadius: 10,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    controlButtonText: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    detailButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+      padding: 16,
+      backgroundColor: colors.border,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    detailButtonText: {
+      color: colors.accent,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    tipCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: 20,
+      flexDirection: "row",
+      gap: 15,
+      borderWidth: 1,
+      borderColor: colors.accent + "1A",
+      marginBottom: 20,
+    },
+    tipIcon: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: colors.accent + "1A",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    tipContent: {
+      flex: 1,
+    },
+    tipTitle: {
+      color: colors.accent,
+      fontSize: 16,
+      fontWeight: "700",
+      marginBottom: 5,
+    },
+    tipText: {
+      color: colors.text,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+  });
+}

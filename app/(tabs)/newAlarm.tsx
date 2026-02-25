@@ -5,8 +5,11 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { useTheme } from "@/hooks/theme-context";
 
 export default function NewAlarmScreen() {
+  const { colors, theme } = useTheme();
+  const styles = getDynamicStyles(colors);
   const [date, setDate] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [name, setName] = useState("");
@@ -70,7 +73,7 @@ export default function NewAlarmScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#FFD54F" />
+          <Ionicons name="chevron-back" size={24} color={colors.accent} />
         </TouchableOpacity>
         
         <View style={styles.headerTitleContainer}>
@@ -97,7 +100,7 @@ export default function NewAlarmScreen() {
             onPress={() => setShowPicker(true)}
           >
             <View style={styles.timeIconContainer}>
-              <Ionicons name="time-outline" size={24} color="#FFD54F" />
+              <Ionicons name="time-outline" size={24} color={theme === 'dark' ? colors.accent : colors.text} />
             </View>
             
             <View style={styles.timeInfo}>
@@ -111,7 +114,7 @@ export default function NewAlarmScreen() {
           </TouchableOpacity>
 
           <View style={styles.timeTip}>
-            <Ionicons name="information-circle-outline" size={16} color="#FFD54F" />
+            <Ionicons name="information-circle-outline" size={16} color={theme === 'dark' ? colors.accent : colors.text} />
             <Text style={styles.timeTipText}>
               Hora actual: {getCurrentTime()}
             </Text>
@@ -126,7 +129,7 @@ export default function NewAlarmScreen() {
           </Text>
           
           <View style={styles.inputContainer}>
-            <Ionicons name="pricetag-outline" size={20} color="#FFD54F" style={styles.inputIcon} />
+            <Ionicons name="pricetag-outline" size={20} color={theme === 'dark' ? colors.accent : colors.text} style={styles.inputIcon} />
             <TextInput
               placeholder="Ej: Despertar, Medicamento, Reunión"
               placeholderTextColor="#888888"
@@ -149,7 +152,7 @@ export default function NewAlarmScreen() {
           </Text>
           
           <View style={styles.textAreaContainer}>
-            <Ionicons name="document-text-outline" size={20} color="#FFD54F" style={styles.textAreaIcon} />
+            <Ionicons name="document-text-outline" size={20} color={theme === 'dark' ? colors.accent : colors.text} style={styles.textAreaIcon} />
             <TextInput
               placeholder="Ej: Tomar medicamento con agua, Reunión importante, Ejercicio matutino"
               placeholderTextColor="#888888"
@@ -171,7 +174,7 @@ export default function NewAlarmScreen() {
           
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
-              <MaterialIcons name="notifications-active" size={20} color="#FFD54F" />
+              <MaterialIcons name="notifications-active" size={20} color={colors.accent} />
               <Text style={styles.settingLabel}>Activada al guardar</Text>
             </View>
             <View style={styles.settingBadge}>
@@ -181,7 +184,7 @@ export default function NewAlarmScreen() {
           
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
-              <Ionicons name="repeat" size={20} color="#FFD54F" />
+              <Ionicons name="repeat" size={20} color={colors.accent} />
               <Text style={styles.settingLabel}>Repetición diaria</Text>
             </View>
             <View style={styles.settingBadge}>
@@ -452,3 +455,237 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_600SemiBold',
   },
 });
+
+function getDynamicStyles(colors: any) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingTop: 50,
+      paddingBottom: 20,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 20,
+      paddingBottom: 15,
+      marginBottom: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    headerTitleContainer: {
+      alignItems: "center",
+      flex: 1,
+    },
+    headerTitle: {
+      color: colors.text,
+      fontSize: 22,
+      fontWeight: "700",
+      fontFamily: 'Montserrat_700Bold',
+    },
+    stepIndicator: {
+      backgroundColor: colors.surface,
+      color: colors.accent,
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderRadius: 20,
+      fontSize: 12,
+      fontWeight: "600",
+      marginTop: 5,
+    },
+    headerPlaceholder: {
+      width: 40,
+    },
+    scrollContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 100,
+    },
+    section: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 15,
+      borderWidth: 1,
+      borderColor: colors.accent + "1A",
+    },
+    sectionTitle: {
+      color: colors.accent,
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 8,
+    },
+    sectionDescription: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      marginBottom: 20,
+      lineHeight: 20,
+    },
+    timeSelector: {
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      padding: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      borderWidth: 2,
+      borderColor: colors.border,
+      marginBottom: 15,
+    },
+    timeIconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colors.accent + "1A",
+      justifyContent: "center",
+      alignItems: "center",
+      marginRight: 15,
+    },
+    timeInfo: {
+      flex: 1,
+    },
+    timeLabel: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: "500",
+      marginBottom: 4,
+    },
+    timeValue: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "700",
+    },
+    timeTip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: colors.accent + "0D",
+      padding: 12,
+      borderRadius: 8,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.accent,
+    },
+    timeTipText: {
+      color: colors.text,
+      fontSize: 14,
+      flex: 1,
+    },
+    inputContainer: {
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: colors.border,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 15,
+    },
+    inputIcon: {
+      marginRight: 10,
+    },
+    input: {
+      flex: 1,
+      color: colors.text,
+      fontSize: 16,
+      paddingVertical: 16,
+      fontFamily: 'Poppins_400Regular',
+    },
+    charCounter: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      marginLeft: 10,
+    },
+    textAreaContainer: {
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: colors.border,
+    },
+    textAreaIcon: {
+      position: "absolute",
+      top: 16,
+      left: 15,
+    },
+    textArea: {
+      color: colors.text,
+      fontSize: 16,
+      paddingVertical: 16,
+      paddingHorizontal: 45,
+      fontFamily: 'Poppins_400Regular',
+      minHeight: 120,
+    },
+    textAreaCounter: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      textAlign: "right",
+      paddingHorizontal: 15,
+      paddingBottom: 10,
+    },
+    settingItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    settingItemLast: {
+      borderBottomWidth: 0,
+    },
+    settingInfo: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    settingLabel: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "500",
+    },
+    settingBadge: {
+      backgroundColor: "rgba(76, 175, 80, 0.2)",
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 12,
+    },
+    settingBadgeText: {
+      color: "#4CAF50",
+      fontSize: 12,
+      fontWeight: "700",
+    },
+    buttonContainer: {
+      position: "absolute",
+      bottom: 20,
+      left: 20,
+      right: 20,
+      backgroundColor: colors.background,
+      paddingTop: 15,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    saveButton: {
+      backgroundColor: colors.accent,
+      borderRadius: 50,
+      padding: 18,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+    },
+    saveButtonDisabled: {
+      backgroundColor: colors.border,
+    },
+    saveButtonText: {
+      color: colors.background,
+      fontSize: 16,
+      fontWeight: "700",
+      fontFamily: 'Poppins_600SemiBold',
+    },
+  });
+}
