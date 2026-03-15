@@ -1,13 +1,12 @@
+import { useTheme } from "@/hooks/theme-context";
 import { Feather, FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { router, useFocusEffect } from "expo-router";
-import { useState } from "react";
-import { Dimensions, FlatList, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, FlatList, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
 import { LineChart, ProgressChart } from "react-native-chart-kit";
-import { useTheme } from "@/hooks/theme-context";
-
-const { width: screenWidth } = Dimensions.get('window');
+import { getIndexStyles, screenWidth } from '../styles/index.styles';
 
 type Alarm = {
   id: number;
@@ -38,7 +37,7 @@ type DietProgress = {
 
 export default function HomeScreen() {
   const { colors, theme } = useTheme();
-  const styles = getDynamicStyles(colors);
+  const styles = getIndexStyles(colors);
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [activeTab, setActiveTab] = useState<'alarms' | 'diet'>('alarms');
   const [dietProgress, setDietProgress] = useState<DietProgress>({
@@ -67,6 +66,45 @@ export default function HomeScreen() {
     loadAlarms();
   });
 
+  useEffect(() => {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: false })
+    });
+
+    (async () => {
+      try {
+        await Notifications.setNotificationChannelAsync('alarm-channel', {
+          name: 'Alarm Channel',
+          importance: Notifications.AndroidImportance.MAX,
+          sound: 'default',
+          vibrationPattern: [0, 500, 200, 500],
+          lightColor: '#FF0000',
+        });
+      } catch (e) {
+        // ignore if not Android or not supported
+      }
+    })();
+
+    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+      const alarmId = response.notification.request.content.data?.alarmId;
+      if (alarmId) {
+        router.push(`/alarmScreen?id=${alarmId}`);
+      }
+    });
+
+    const receivedListener = Notifications.addNotificationReceivedListener(notification => {
+      const alarmId = notification.request.content.data?.alarmId;
+      if (alarmId) {
+        router.push(`/alarmScreen?id=${alarmId}`);
+      }
+    });
+
+    return () => {
+      responseListener.remove();
+      receivedListener.remove();
+    };
+  }, []);
+
   const toggleAlarm = async (alarm: Alarm) => {
     let updatedAlarm = { ...alarm, enabled: !alarm.enabled };
 
@@ -76,6 +114,13 @@ export default function HomeScreen() {
           title: updatedAlarm.name || "Alarma",
           body: updatedAlarm.description || "¡Es hora!",
           sound: true,
+          data: { alarmId: updatedAlarm.id },
+          android: {
+            channelId: 'alarm-channel',
+            priority: 'max',
+            sticky: true,
+            vibrate: true,
+          }
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -192,9 +237,9 @@ export default function HomeScreen() {
               decimalPlaces: 0,
               color: (opacity = 1, index) => {
                 const chartColors = [
-                  `rgba(255, 213, 79, ${opacity})`, // Calorías - Amarillo
-                  `rgba(66, 165, 245, ${opacity})`, // Agua - Azul
-                  `rgba(102, 187, 106, ${opacity})`  // Comidas - Verde
+                  `rgba(255, 213, 79, ${opacity})`,
+                  `rgba(66, 165, 245, ${opacity})`,
+                  `rgba(102, 187, 106, ${opacity})`
                 ];
                 return chartColors[index];
               },
@@ -297,7 +342,6 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-
       {/* Gráfico de Línea - Semanal */}
       <View style={styles.sectionCard}>
         <View style={styles.chartHeader}>
@@ -349,7 +393,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {}
+      {/* Tip Card */}
       <View style={styles.tipCard}>
         <View style={styles.tipIcon}>
           <Ionicons name="bulb-outline" size={24} color={theme === 'dark' ? colors.accent : colors.text} />
@@ -398,7 +442,7 @@ export default function HomeScreen() {
           <Ionicons 
             name="alarm" 
             size={20} 
-            color={activeTab === 'alarms' ? "#121212" : "#FFF8E1"} 
+            color={activeTab === 'alarms' ? "#121212" : colors.text} 
           />
           <Text style={[styles.tabText, activeTab === 'alarms' && styles.activeTabText]}>
             Alarmas
@@ -412,7 +456,7 @@ export default function HomeScreen() {
           <Ionicons 
             name="restaurant" 
             size={20} 
-            color={activeTab === 'diet' ? "#121212" : "#FFF8E1"} 
+            color={activeTab === 'diet' ? "#121212" : colors.text} 
           />
           <Text style={[styles.tabText, activeTab === 'diet' && styles.activeTabText]}>
             Dieta
@@ -420,10 +464,10 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {}
+      {/* Contenido basado en la pestaña activa */}
       {activeTab === 'alarms' ? (
         <>
-          {}
+          {/* Resumen de Alarmas */}
           <View style={styles.summaryContainer}>
             <View style={styles.summaryItem}>
               <View style={[styles.summaryIcon, styles.summaryIconActive]}>
@@ -448,7 +492,7 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {}
+          {/* Lista de Alarmas o Empty State */}
           {alarms.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconContainer}>
@@ -477,7 +521,7 @@ export default function HomeScreen() {
                   styles.alarmCard,
                   item.enabled ? styles.alarmCardActive : styles.alarmCardInactive
                 ]}>
-                  {}
+                  {/* Time Section */}
                   <View style={styles.alarmTimeContainer}>
                     <View style={styles.alarmTimeHeader}>
                       <Text style={[
@@ -522,9 +566,21 @@ export default function HomeScreen() {
                       />
                     </View>
                     
+                    <TouchableOpacity
+                      style={styles.editAlarmButton}
+                      onPress={() => router.push(`editAlarma?id=${item.id}`)}
+                    >
+                      <Feather name="edit-2" size={18} color={colors.accent} />
+                    </TouchableOpacity>
+
                     <TouchableOpacity 
                       style={styles.deleteButton}
-                      onPress={() => removeAlarm(item)}
+                      onPress={() => {
+                        Alert.alert('Eliminar alarma', '¿Deseas eliminar esta alarma?', [
+                          { text: 'Cancelar', style: 'cancel' },
+                          { text: 'Eliminar', style: 'destructive', onPress: () => removeAlarm(item) }
+                        ]);
+                      }}
                     >
                       <Ionicons name="trash-outline" size={20} color="#F44336" />
                     </TouchableOpacity>
@@ -539,983 +595,4 @@ export default function HomeScreen() {
       )}
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1E1E1E",
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#1E1E1E",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitleContainer: {
-    alignItems: "center",
-    flex: 1,
-  },
-  headerTitle: {
-    color: "#FFF8E1",
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  stepIndicator: {
-    backgroundColor: "#1E1E1E",
-    color: "#FFD54F",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 20,
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 5,
-  },
-  addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#1E1E1E",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  tabsContainer: {
-    flexDirection: "row",
-    backgroundColor: "#1E1E1E",
-    borderRadius: 50,
-    padding: 4,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255, 213, 79, 0.1)",
-  },
-  tab: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 50,
-  },
-  activeTab: {
-    backgroundColor: "#FFD54F",
-  },
-  tabText: {
-    color: "#FFF8E1",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  activeTabText: {
-    color: "#121212",
-  },
-  summaryContainer: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 213, 79, 0.1)",
-  },
-  summaryItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 15,
-  },
-  summaryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  summaryIconActive: {
-    backgroundColor: "#FFD54F",
-  },
-  summaryIconTotal: {
-    backgroundColor: "#4CAF50",
-  },
-  summaryLabel: {
-    color: "#888888",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  summaryValue: {
-    color: "#FFF8E1",
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  summaryDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: "#333333",
-  },
-  listContent: {
-    paddingBottom: 20,
-  },
-  alarmCard: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 16,
-    marginBottom: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "#333333",
-  },
-  alarmCardActive: {
-    borderColor: "#FFD54F",
-    backgroundColor: "rgba(255, 213, 79, 0.05)",
-  },
-  alarmCardInactive: {
-    borderColor: "#333333",
-  },
-  alarmTimeContainer: {
-    marginBottom: 15,
-  },
-  alarmTimeHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  alarmTime: {
-    fontSize: 28,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-  },
-  alarmTimeActive: {
-    color: "#FFD54F",
-  },
-  alarmTimeInactive: {
-    color: "#888888",
-  },
-  alarmStatus: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  alarmStatusActive: {
-    backgroundColor: "rgba(76, 175, 80, 0.2)",
-  },
-  alarmStatusInactive: {
-    backgroundColor: "rgba(244, 67, 54, 0.2)",
-  },
-  alarmStatusText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#FFF8E1",
-  },
-  alarmDetails: {
-    gap: 6,
-  },
-  alarmName: {
-    color: "#FFF8E1",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  descriptionContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  alarmDescription: {
-    color: "#888888",
-    fontSize: 14,
-    flex: 1,
-  },
-  alarmControls: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#333333",
-    paddingTop: 15,
-  },
-  switchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  switchLabel: {
-    color: "#FFF8E1",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  deleteButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(244, 67, 54, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(244, 67, 54, 0.3)",
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 40,
-    marginTop: 40,
-  },
-  emptyIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#1E1E1E",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255, 213, 79, 0.1)",
-  },
-  emptyStateTitle: {
-    color: "#FFF8E1",
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  emptyStateText: {
-    color: "#888888",
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 25,
-    lineHeight: 22,
-  },
-  emptyStateButton: {
-    backgroundColor: "#FFD54F",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingHorizontal: 25,
-    paddingVertical: 15,
-    borderRadius: 50,
-  },
-  emptyStateButtonText: {
-    color: "#121212",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  // Diet Tab Styles
-  dietContent: {
-    paddingBottom: 100,
-  },
-  dietHeader: {
-    marginBottom: 20,
-  },
-  dietHeaderTitle: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
-  },
-  dietHeaderText: {
-    color: "#FFF8E1",
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  dietDate: {
-    color: "#888888",
-    fontSize: 14,
-  },
-  streakCard: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 16,
-    padding: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255, 213, 79, 0.1)",
-  },
-  streakInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 15,
-  },
-  streakIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "rgba(255, 213, 79, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  streakLabel: {
-    color: "#888888",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  streakValue: {
-    color: "#FFD54F",
-    fontSize: 28,
-    fontWeight: "700",
-  },
-  editButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#333333",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sectionCard: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255, 213, 79, 0.1)",
-  },
-  sectionTitle: {
-    color: "#FFD54F",
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 15,
-  },
-  chartHeader: {
-    marginBottom: 10,
-  },
-  chartSubtitle: {
-    color: "#FFFFFFFF",
-    fontSize: 14,
-  },
-  progressChartContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  progressChart: {
-    borderRadius: 16,
-  },
-  lineChart: {
-    borderRadius: 16,
-    marginBottom: 15,
-  },
-  progressStats: {
-    gap: 12,
-  },
-  progressStat: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  statDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  statLabel: {
-    color: "#FFF8E1",
-    fontSize: 14,
-    fontWeight: "500",
-    width: 80,
-  },
-  statValue: {
-    color: "#FFF8E1",
-    fontSize: 14,
-    fontWeight: "600",
-    flex: 1,
-  },
-  chartStats: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  chartStat: {
-    color: "#FFF8E1",
-    fontSize: 14,
-  },
-  chartStatLabel: {
-    color: "#888888",
-  },
-  chartStatValue: {
-    color: "#FFD54F",
-    fontWeight: "600",
-  },
-  quickControls: {
-    gap: 20,
-    marginBottom: 20,
-  },
-  quickControl: {
-    gap: 10,
-  },
-  controlLabel: {
-    color: "#FFF8E1",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  controlButtons: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  controlButton: {
-    flex: 1,
-    backgroundColor: "#333333",
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#444444",
-  },
-  controlButtonText: {
-    color: "#FFF8E1",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  detailButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    padding: 16,
-    backgroundColor: "#333333",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#444444",
-  },
-  detailButtonText: {
-    color: "#FFD54F",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  tipCard: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 16,
-    padding: 20,
-    flexDirection: "row",
-    gap: 15,
-    borderWidth: 1,
-    borderColor: "rgba(255, 213, 79, 0.1)",
-    marginBottom: 20,
-  },
-  tipIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "rgba(255, 213, 79, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  tipContent: {
-    flex: 1,
-  },
-  tipTitle: {
-    color: "#FFD54F",
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 5,
-  },
-  tipText: {
-    color: "#FFF8E1",
-    fontSize: 14,
-    lineHeight: 20,
-  },
-});
-
-function getDynamicStyles(colors: any) {
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-      paddingTop: 50,
-      paddingHorizontal: 20,
-      paddingBottom: 20,
-    },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: 20,
-      paddingBottom: 15,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: colors.surface,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    headerTitleContainer: {
-      alignItems: "center",
-      flex: 1,
-    },
-    headerTitle: {
-      color: colors.text,
-      fontSize: 24,
-      fontWeight: "700",
-    },
-    stepIndicator: {
-      backgroundColor: colors.surface,
-      color: colors.accent,
-      paddingHorizontal: 12,
-      paddingVertical: 4,
-      borderRadius: 20,
-      fontSize: 12,
-      fontWeight: "600",
-      marginTop: 5,
-    },
-    addButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: colors.surface,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    tabsContainer: {
-      flexDirection: "row",
-      backgroundColor: colors.surface,
-      borderRadius: 50,
-      padding: 4,
-      marginBottom: 20,
-      borderWidth: 1,
-      borderColor: colors.accent + "1A",
-    },
-    tab: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      paddingVertical: 12,
-      borderRadius: 50,
-    },
-    activeTab: {
-      backgroundColor: colors.accent,
-    },
-    tabText: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: "600",
-    },
-    activeTabText: {
-      color: colors.background,
-    },
-    summaryContainer: {
-      backgroundColor: colors.surface,
-      borderRadius: 16,
-      padding: 20,
-      marginBottom: 20,
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: colors.accent + "1A",
-    },
-    summaryItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 15,
-    },
-    summaryIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    summaryIconActive: {
-      backgroundColor: colors.accent,
-    },
-    summaryIconTotal: {
-      backgroundColor: "#4CAF50",
-    },
-    summaryLabel: {
-      color: colors.textSecondary,
-      fontSize: 12,
-      fontWeight: "500",
-    },
-    summaryValue: {
-      color: colors.text,
-      fontSize: 24,
-      fontWeight: "700",
-    },
-    summaryDivider: {
-      width: 1,
-      height: 40,
-      backgroundColor: colors.border,
-    },
-    listContent: {
-      paddingBottom: 20,
-    },
-    alarmCard: {
-      backgroundColor: colors.surface,
-      borderRadius: 16,
-      marginBottom: 12,
-      padding: 20,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    alarmCardActive: {
-      borderColor: colors.accent,
-      backgroundColor: colors.accent + "08",
-    },
-    alarmCardInactive: {
-      borderColor: colors.border,
-    },
-    alarmTimeContainer: {
-      marginBottom: 15,
-    },
-    alarmTimeHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 10,
-    },
-    alarmTime: {
-      fontSize: 28,
-      fontWeight: "700",
-      letterSpacing: 0.5,
-    },
-    alarmTimeActive: {
-      color: colors.accent,
-    },
-    alarmTimeInactive: {
-      color: colors.textSecondary,
-    },
-    alarmStatus: {
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 12,
-    },
-    alarmStatusActive: {
-      backgroundColor: "rgba(76, 175, 80, 0.2)",
-    },
-    alarmStatusInactive: {
-      backgroundColor: "rgba(244, 67, 54, 0.2)",
-    },
-    alarmStatusText: {
-      fontSize: 10,
-      fontWeight: "700",
-    },
-    alarmStatusTextActive: {
-      color: "#4CAF50",
-    },
-    alarmStatusTextInactive: {
-      color: "#F44336",
-    },
-    alarmDetails: {
-      gap: 6,
-    },
-    alarmName: {
-      color: colors.text,
-      fontSize: 16,
-      fontWeight: "600",
-    },
-    descriptionContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-    },
-    alarmDescription: {
-      color: colors.textSecondary,
-      fontSize: 14,
-      flex: 1,
-    },
-    alarmControls: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-      paddingTop: 15,
-    },
-    switchContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-    },
-    switchLabel: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: "500",
-    },
-    deleteButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: "rgba(244, 67, 54, 0.1)",
-      justifyContent: "center",
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: "rgba(244, 67, 54, 0.3)",
-    },
-    emptyState: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      paddingHorizontal: 40,
-      marginTop: 40,
-    },
-    emptyIconContainer: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
-      backgroundColor: colors.surface,
-      justifyContent: "center",
-      alignItems: "center",
-      marginBottom: 20,
-      borderWidth: 1,
-      borderColor: colors.accent + "1A",
-    },
-    emptyStateTitle: {
-      color: colors.text,
-      fontSize: 22,
-      fontWeight: "700",
-      marginBottom: 10,
-      textAlign: "center",
-    },
-    emptyStateText: {
-      color: colors.textSecondary,
-      fontSize: 16,
-      textAlign: "center",
-      marginBottom: 25,
-      lineHeight: 22,
-    },
-    emptyStateButton: {
-      backgroundColor: colors.accent,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 10,
-      paddingHorizontal: 25,
-      paddingVertical: 15,
-      borderRadius: 50,
-    },
-    emptyStateButtonText: {
-      color: colors.background,
-      fontSize: 16,
-      fontWeight: "700",
-    },
-    dietContent: {
-      paddingBottom: 100,
-    },
-    dietHeader: {
-      marginBottom: 20,
-    },
-    dietHeaderTitle: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      marginBottom: 8,
-    },
-    dietHeaderText: {
-      color: colors.text,
-      fontSize: 20,
-      fontWeight: "700",
-    },
-    dietDate: {
-      color: colors.textSecondary,
-      fontSize: 14,
-    },
-    streakCard: {
-      backgroundColor: colors.surface,
-      borderRadius: 16,
-      padding: 20,
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 20,
-      borderWidth: 1,
-      borderColor: colors.accent + "1A",
-    },
-    streakInfo: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 15,
-    },
-    streakIcon: {
-      width: 50,
-      height: 50,
-      borderRadius: 25,
-      backgroundColor: colors.accent + "1A",
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    streakLabel: {
-      color: colors.textSecondary,
-      fontSize: 12,
-      fontWeight: "500",
-    },
-    streakValue: {
-      color: colors.accent,
-      fontSize: 28,
-      fontWeight: "700",
-    },
-    editButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.border,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    sectionCard: {
-      backgroundColor: colors.surface,
-      borderRadius: 16,
-      padding: 20,
-      marginBottom: 20,
-      borderWidth: 1,
-      borderColor: colors.accent + "1A",
-    },
-    sectionTitle: {
-      color: colors.accent,
-      fontSize: 18,
-      fontWeight: "700",
-      marginBottom: 15,
-    },
-    chartHeader: {
-      marginBottom: 10,
-    },
-    lineChart: {
-      marginVertical: 16,
-      alignSelf: "center",
-    },
-    progressChart: {
-      marginVertical: 16,
-      alignSelf: "center",
-    },
-    progressChartContainer: {
-      alignItems: "center",
-      marginBottom: 20,
-    },
-    progressStats: {
-      gap: 12,
-    },
-    progressStat: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-    },
-    statDot: {
-      width: 12,
-      height: 12,
-      borderRadius: 6,
-    },
-    statLabel: {
-      color: colors.textSecondary,
-      fontSize: 12,
-      fontWeight: "600",
-    },
-    statValue: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: "700",
-    },
-    chartStats: {
-      backgroundColor: colors.surface,
-      borderRadius: 12,
-      padding: 15,
-      gap: 10,
-    },
-    chartStat: {
-      color: colors.text,
-      fontSize: 14,
-    },
-    chartStatLabel: {
-      color: colors.textSecondary,
-    },
-    chartStatValue: {
-      color: colors.accent,
-      fontWeight: "600",
-    },
-    quickControls: {
-      gap: 20,
-      marginBottom: 20,
-    },
-    quickControl: {
-      gap: 10,
-    },
-    controlLabel: {
-      color: colors.text,
-      fontSize: 16,
-      fontWeight: "600",
-    },
-    controlButtons: {
-      flexDirection: "row",
-      gap: 12,
-    },
-    controlButton: {
-      flex: 1,
-      backgroundColor: colors.border,
-      padding: 12,
-      borderRadius: 10,
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    controlButtonText: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: "600",
-    },
-    detailButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 10,
-      padding: 16,
-      backgroundColor: colors.border,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    detailButtonText: {
-      color: colors.accent,
-      fontSize: 16,
-      fontWeight: "600",
-    },
-    tipCard: {
-      backgroundColor: colors.surface,
-      borderRadius: 16,
-      padding: 20,
-      flexDirection: "row",
-      gap: 15,
-      borderWidth: 1,
-      borderColor: colors.accent + "1A",
-      marginBottom: 20,
-    },
-    tipIcon: {
-      width: 50,
-      height: 50,
-      borderRadius: 25,
-      backgroundColor: colors.accent + "1A",
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    tipContent: {
-      flex: 1,
-    },
-    tipTitle: {
-      color: colors.accent,
-      fontSize: 16,
-      fontWeight: "700",
-      marginBottom: 5,
-    },
-    tipText: {
-      color: colors.text,
-      fontSize: 14,
-      lineHeight: 20,
-    },
-  });
 }

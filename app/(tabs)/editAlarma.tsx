@@ -1,0 +1,532 @@
+import { useTheme } from '@/hooks/theme-context';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import {
+    Alert,
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
+} from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+
+type Alarm = {
+  id: number;
+  hour: number;
+  minute: number;
+  name: string;
+  description: string;
+  enabled: boolean;
+  notifId?: string;
+};
+
+export default function EditAlarma() {
+  const { colors, theme } = useTheme();
+  const styles = getDynamicStyles(colors);
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const idParam = params.id as string | undefined;
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const [alarm, setAlarm] = useState<Alarm | null>(null);
+  const [date, setDate] = useState<Date | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [name, setName] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  const [enabled, setEnabled] = useState<boolean>(false);
+  const [isReady, setIsReady] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!idParam) {
+        Alert.alert('Error', 'No se especificó una alarma para editar.', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+        return;
+      }
+      const raw = await AsyncStorage.getItem('@alarms');
+      const list: Alarm[] = raw ? JSON.parse(raw) : [];
+      const found = list.find(a => String(a.id) === String(idParam));
+      if (found) {
+        setAlarm(found);
+        setName(found.name);
+        setDescription(found.description);
+        setEnabled(found.enabled);
+        const d = new Date();
+        d.setHours(found.hour, found.minute, 0, 0);
+        setDate(d);
+      } else {
+        Alert.alert('Alarma no encontrada', 'La alarma solicitada no existe.', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      }
+    };
+    load();
+  }, [idParam]);
+
+  // Efecto para habilitar el scroll después de montar
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsReady(true);
+      scrollViewRef.current?.flashScrollIndicators();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Efecto para manejar el teclado en iOS
+  useEffect(() => {
+    const keyboardWillShow = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardWillHide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardWillShow.remove();
+      keyboardWillHide.remove();
+    };
+  }, []);
+
+  const formatTime = () => {
+    if (!date) return 'Seleccionar hora';
+    const period = date.getHours() >= 12 ? 'PM' : 'AM';
+    const displayHour = date.getHours() % 12 || 12;
+    return `${String(displayHour).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} ${period}`;
+  };
+
+  const getCurrentTime = () => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  };
+
+  const saveAlarm = async () => {
+    if (!alarm || !date) return;
+
+    const hour = date.getHours();
+    const minute = date.getMinutes();
+
+    if (alarm.notifId) {
+      try {
+        await Notifications.cancelScheduledNotificationAsync(alarm.notifId);
+      } catch {}
+    }
+
+    let newNotifId: string | undefined;
+    if (enabled) {
+      const notifId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: name || 'Alarma',
+          body: description || '¡Es hora!',
+          sound: true,
+          data: { alarmId: alarm.id },
+        },
+        // @ts-ignore
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute,
+          repeats: true,
+        } as any,
+      });
+      newNotifId = notifId;
+    }
+
+    const raw = await AsyncStorage.getItem('@alarms');
+    const list: Alarm[] = raw ? JSON.parse(raw) : [];
+    const next = list.map(a =>
+      a.id === alarm.id
+        ? { ...a, hour, minute, name, description, enabled, notifId: newNotifId }
+        : a
+    );
+    await AsyncStorage.setItem('@alarms', JSON.stringify(next));
+    router.back();
+  };
+
+  const removeAlarm = async () => {
+    if (!alarm) return;
+    if (alarm.notifId) {
+      try {
+        await Notifications.cancelScheduledNotificationAsync(alarm.notifId);
+      } catch {}
+    }
+    const raw = await AsyncStorage.getItem('@alarms');
+    const list: Alarm[] = raw ? JSON.parse(raw) : [];
+    const next = list.filter(a => a.id !== alarm.id);
+    await AsyncStorage.setItem('@alarms', JSON.stringify(next));
+    router.back();
+  };
+
+  if (!alarm) return null;
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? (keyboardVisible ? 90 : 0) : 0}
+        enabled={Platform.OS === 'ios'}
+      >
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+              <Ionicons name="chevron-back" size={24} color={colors.accent} />
+            </TouchableOpacity>
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitle}>Editar Alarma</Text>
+             </View>
+            <View style={styles.headerPlaceholder} />
+          </View>
+
+          <ScrollView
+            ref={scrollViewRef}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            bounces={true}
+            alwaysBounceVertical={true}
+            decelerationRate="normal"
+            style={{ flex: 1 }}
+            scrollEnabled={isReady}
+          >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <View>
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Hora de la Alarma</Text>
+                  <Text style={styles.sectionDescription}>Ajusta la hora de tu alarma</Text>
+
+                  <TouchableOpacity 
+                    style={styles.timeSelector} 
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      setShowPicker(true);
+                    }}
+                  >
+                    <View style={styles.timeIconContainer}>
+                      <Ionicons name="time-outline" size={24} color={theme === 'dark' ? colors.accent : colors.text} />
+                    </View>
+                    <View style={styles.timeInfo}>
+                      <Text style={styles.timeLabel}>Hora seleccionada</Text>
+                      <Text style={styles.timeValue}>{date ? formatTime() : 'No seleccionada'}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#888888" />
+                  </TouchableOpacity>
+
+                  <View style={styles.timeTip}>
+                    <Ionicons name="information-circle-outline" size={16} color={theme === 'dark' ? colors.accent : colors.text} />
+                    <Text style={styles.timeTipText}>Hora actual: {getCurrentTime()}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Nombre de la Alarma</Text>
+                  <Text style={styles.sectionDescription}>Describe brevemente para qué es la alarma (opcional)</Text>
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="pricetag-outline" size={20} color={theme === 'dark' ? colors.accent : colors.text} style={styles.inputIcon} />
+                    <TextInput 
+                      placeholder="Ej: Despertar, Medicamento, Reunión" 
+                      placeholderTextColor="#888888" 
+                      value={name} 
+                      onChangeText={setName} 
+                      style={styles.input} 
+                      maxLength={30} 
+                    />
+                    {name.length > 0 && <Text style={styles.charCounter}>{name.length}/30</Text>}
+                  </View>
+                </View>
+
+                <View style={[styles.section, Platform.OS === 'ios' && keyboardVisible && styles.sectionWithKeyboard]}>
+                  <Text style={styles.sectionTitle}>Descripción</Text>
+                  <Text style={styles.sectionDescription}>Detalles adicionales (opcional)</Text>
+                  <View style={styles.textAreaContainer}>
+                    <Ionicons name="document-text-outline" size={20} color={theme === 'dark' ? colors.accent : colors.text} style={styles.textAreaIcon} />
+                    <TextInput 
+                      placeholder="Ej: Tomar medicamento con agua, reunión importante" 
+                      placeholderTextColor="#888888" 
+                      value={description} 
+                      onChangeText={setDescription} 
+                      style={styles.textArea} 
+                      multiline 
+                      numberOfLines={4} 
+                      maxLength={100} 
+                      textAlignVertical="top"
+                      blurOnSubmit={false}
+                    />
+                    <Text style={styles.textAreaCounter}>{description.length}/100</Text>
+                  </View>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </ScrollView>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={[styles.saveButton, !date && styles.saveButtonDisabled]} 
+              onPress={saveAlarm} 
+              disabled={!date}
+            >
+              <Text style={styles.saveButtonText}>Guardar Alarma</Text>
+              <Ionicons name="checkmark-circle" size={20} color={colors.background} />
+            </TouchableOpacity>
+          </View>
+
+          <DateTimePickerModal 
+            isVisible={showPicker} 
+            mode="time" 
+            onConfirm={d => { 
+              setDate(d); 
+              setShowPicker(false); 
+            }} 
+            onCancel={() => setShowPicker(false)} 
+            themeVariant="dark" 
+            isDarkModeEnabled={true} 
+          />
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+function getDynamicStyles(colors: any) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingTop: Platform.OS === 'ios' ? 0 : 50,
+      paddingBottom: 20,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingBottom: 15,
+      marginBottom: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      paddingTop: Platform.OS === 'ios' ? 10 : 0,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    headerTitleContainer: {
+      alignItems: 'center',
+      flex: 1,
+    },
+    headerTitle: {
+      color: colors.text,
+      fontSize: 22,
+      fontWeight: '700',
+    },
+    stepIndicator: {
+      backgroundColor: colors.surface,
+      color: colors.accent,
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderRadius: 20,
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 5,
+    },
+    headerPlaceholder: { width: 40 },
+    scrollContent: { 
+      paddingHorizontal: 20, 
+      paddingBottom: 120,
+    },
+    section: { 
+      backgroundColor: colors.surface, 
+      borderRadius: 16, 
+      padding: 20, 
+      marginBottom: 15, 
+      borderWidth: 1, 
+      borderColor: colors.accent + '1A' 
+    },
+    sectionWithKeyboard: {
+      marginBottom: Platform.OS === 'ios' ? 20 : 15,
+    },
+    sectionTitle: { 
+      color: colors.accent, 
+      fontSize: 18, 
+      fontWeight: '700', 
+      marginBottom: 8 
+    },
+    sectionDescription: { 
+      color: colors.textSecondary, 
+      fontSize: 14, 
+      marginBottom: 20, 
+      lineHeight: 20 
+    },
+    timeSelector: { 
+      backgroundColor: colors.background, 
+      borderRadius: 12, 
+      padding: 16, 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      borderWidth: 2, 
+      borderColor: colors.border, 
+      marginBottom: 15 
+    },
+    timeIconContainer: { 
+      width: 48, 
+      height: 48, 
+      borderRadius: 24, 
+      backgroundColor: colors.accent + '1A', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      marginRight: 15 
+    },
+    timeInfo: { flex: 1 },
+    timeLabel: { 
+      color: colors.textSecondary, 
+      fontSize: 12, 
+      fontWeight: '500', 
+      marginBottom: 4 
+    },
+    timeValue: { 
+      color: colors.text, 
+      fontSize: 20, 
+      fontWeight: '700' 
+    },
+    timeTip: { 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      gap: 8, 
+      backgroundColor: colors.accent + '0D', 
+      padding: 12, 
+      borderRadius: 8, 
+      borderLeftWidth: 3, 
+      borderLeftColor: colors.accent 
+    },
+    timeTipText: { 
+      color: colors.text, 
+      fontSize: 14, 
+      flex: 1 
+    },
+    inputContainer: { 
+      backgroundColor: colors.background, 
+      borderRadius: 12, 
+      borderWidth: 2, 
+      borderColor: colors.border, 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      paddingHorizontal: 15 
+    },
+    inputIcon: { marginRight: 10 },
+    input: { 
+      flex: 1, 
+      color: colors.text, 
+      fontSize: 16, 
+      paddingVertical: 16 
+    },
+    charCounter: { 
+      color: colors.textSecondary, 
+      fontSize: 12, 
+      marginLeft: 10 
+    },
+    textAreaContainer: { 
+      backgroundColor: colors.background, 
+      borderRadius: 12, 
+      borderWidth: 2, 
+      borderColor: colors.border,
+      position: 'relative',
+    },
+    textAreaIcon: { 
+      position: 'absolute', 
+      top: 16, 
+      left: 15,
+      zIndex: 1,
+    },
+    textArea: { 
+      color: colors.text, 
+      fontSize: 16, 
+      paddingVertical: 16, 
+      paddingHorizontal: 45, 
+      minHeight: 120,
+      maxHeight: 200,
+      textAlignVertical: 'top',
+    },
+    textAreaCounter: { 
+      color: colors.textSecondary, 
+      fontSize: 12, 
+      textAlign: 'right', 
+      paddingHorizontal: 15, 
+      paddingBottom: 10 
+    },
+    settingItem: { 
+      flexDirection: 'row', 
+      justifyContent: 'space-between', 
+      alignItems: 'center', 
+      paddingVertical: 15, 
+      borderBottomWidth: 1, 
+      borderBottomColor: colors.border 
+    },
+    settingInfo: { 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      gap: 12 
+    },
+    settingLabel: { 
+      color: colors.text, 
+      fontSize: 16, 
+      fontWeight: '500' 
+    },
+    buttonContainer: { 
+      position: 'absolute', 
+      bottom: 0, 
+      left: 0, 
+      right: 0, 
+      backgroundColor: colors.background, 
+      paddingHorizontal: 20,
+      paddingTop: 15,
+      paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+      borderTopWidth: 1, 
+      borderTopColor: colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -3 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 5,
+    },
+    saveButton: { 
+      backgroundColor: colors.accent, 
+      borderRadius: 50, 
+      padding: 18, 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      gap: 10 
+    },
+    saveButtonDisabled: { 
+      backgroundColor: colors.border 
+    },
+    saveButtonText: { 
+      color: colors.background, 
+      fontSize: 16, 
+      fontWeight: '700' 
+    },
+  });
+}

@@ -1,8 +1,8 @@
+import { useTheme } from "@/hooks/theme-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
-import { useTheme } from "@/hooks/theme-context";
 
 export default function AjustesScreen() {
   const { colors, theme, toggleTheme } = useTheme();
