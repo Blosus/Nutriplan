@@ -1,4 +1,5 @@
 import { useTheme } from '@/hooks/theme-context';
+import { simulateNutriAppLogin } from '@/services/auth';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
@@ -11,34 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { getLoginStyles } from '../styles/login.styles';
-
-type FakeFirebaseUser = {
-  uid: string;
-  email: string;
-};
-
-const fakeFirebaseLoginNutriApp = async (
-  email: string,
-  password: string
-): Promise<FakeFirebaseUser> => {
-  // Simula una llamada a Firebase Auth de la base de datos/proyecto NutriApp.
-  await new Promise((resolve) => setTimeout(resolve, 1200));
-
-  const isEmailValid = /\S+@\S+\.\S+/.test(email);
-  if (!isEmailValid) {
-    throw new Error('El correo no tiene un formato valido.');
-  }
-
-  if (password.length < 6) {
-    throw new Error('La contrasena debe tener al menos 6 caracteres.');
-  }
-
-  return {
-    uid: 'nutriapp-demo-user-001',
-    email,
-  };
-};
+import { getLoginStyles } from './styles/login.styles';
 
 export default function LoginScreen() {
   const { colors } = useTheme();
@@ -58,7 +32,7 @@ export default function LoginScreen() {
     setIsLoading(true);
 
     try {
-      const user = await fakeFirebaseLoginNutriApp(email.trim(), password);
+      const user = await simulateNutriAppLogin(email.trim(), password);
       Alert.alert('Login correcto', `Bienvenido ${user.email}`);
       router.replace('/(tabs)');
     } catch (error) {
@@ -124,7 +98,8 @@ export default function LoginScreen() {
         </TouchableOpacity>
 
         <Text style={styles.helperText}>
-          Simulacion activa: esta pantalla finge la autenticacion con Firebase (NutriApp).
+          Firebase NutriApp ya esta configurado. El login sigue simulado hasta que actives
+          Email/Password en Firebase Auth.
         </Text>
       </View>
     </KeyboardAvoidingView>
