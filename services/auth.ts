@@ -1,4 +1,5 @@
 import { auth } from './firebase';
+import { ensureUserProfile } from './user-profile';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -61,7 +62,7 @@ const mapFirebaseAuthError = (error: unknown) => {
   return 'No se pudo completar la autenticación.';
 };
 
-export const simulateNutriAppLogin = async (
+export const signInNutriApp = async (
   email: string,
   password: string
 ): Promise<NutriAppUser> => {
@@ -74,13 +75,16 @@ export const simulateNutriAppLogin = async (
       password
     );
 
-    return mapFirebaseUser(credential.user);
+    const user = mapFirebaseUser(credential.user);
+    await ensureUserProfile(user);
+
+    return user;
   } catch (error) {
     throw new Error(mapFirebaseAuthError(error));
   }
 };
 
-export const simulateNutriAppRegister = async (
+export const registerNutriApp = async (
   email: string,
   password: string,
   confirmPassword: string
@@ -98,7 +102,10 @@ export const simulateNutriAppRegister = async (
       password
     );
 
-    return mapFirebaseUser(credential.user);
+    const user = mapFirebaseUser(credential.user);
+    await ensureUserProfile(user);
+
+    return user;
   } catch (error) {
     throw new Error(mapFirebaseAuthError(error));
   }

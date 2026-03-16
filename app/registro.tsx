@@ -1,6 +1,9 @@
 import { useTheme } from '@/hooks/theme-context';
-import { signOutNutriApp, simulateNutriAppRegister } from '@/services/auth';
-import { clearCurrentSessionUser } from '@/services/session';
+import { registerNutriApp, signOutNutriApp } from '@/services/auth';
+import {
+  clearCurrentSessionUser,
+  setPendingLoginRedirectAfterRegister,
+} from '@/services/session';
 import { Ionicons } from '@expo/vector-icons';
 import { router, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -44,13 +47,14 @@ export default function RegistroScreen() {
     setIsLoading(true);
 
     try {
-      await simulateNutriAppRegister(
+      await registerNutriApp(
         email.trim(),
         password,
         confirmPassword
       );
       await signOutNutriApp();
       await clearCurrentSessionUser();
+      await setPendingLoginRedirectAfterRegister();
 
       Alert.alert('Registro exitoso', 'Cuenta creada correctamente. Ahora inicia sesión para continuar.', [
         { text: 'Continuar', onPress: () => router.replace(loginRoute) },

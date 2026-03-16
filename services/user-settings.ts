@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { db } from "./firebase";
+import { auth, db } from "./firebase";
 
 export type UserSettings = {
   notificationsEnabled: boolean;
@@ -19,6 +19,20 @@ const USERS_COLLECTION = "users";
 const SETTINGS_SUBCOLLECTION = "settings";
 const SETTINGS_DOC_ID = "preferences";
 const LEGACY_SETTINGS_COLLECTION = "userSettings";
+
+async function canUseCloud(uid: string): Promise<boolean> {
+  if (uid === "guest") {
+    return false;
+  }
+
+  try {
+    await auth.authStateReady();
+    return auth.currentUser?.uid === uid;
+  } catch (error) {
+    console.error("Error waiting for auth before cloud settings access:", error);
+    return false;
+  }
+}
 
 const buildSettingsStorageKey = (uid: string) => `${SETTINGS_STORAGE_KEY_PREFIX}:${uid}`;
 
@@ -123,6 +137,10 @@ async function writeCloudSettings(uid: string, settings: UserSettings): Promise<
 export async function loadUserSettings(uid: string): Promise<UserSettings> {
   const localSettings = await readLocalSettings(uid);
 
+  if (!(await canUseCloud(uid))) {
+    return localSettings ?? normalizeSettings(DEFAULT_USER_SETTINGS);
+  }
+
   const cloudSettings = await readCloudSettings(uid);
   if (cloudSettings) {
     await writeLocalSettings(uid, cloudSettings);
@@ -147,7 +165,10 @@ export async function saveUserSettings(
   const normalized = normalizeSettings(settings);
 
   await writeLocalSettings(uid, normalized);
-  await writeCloudSettings(uid, normalized);
+
+  if (await canUseCloud(uid)) {
+    await writeCloudSettings(uid, normalized);
+  }
 
   return normalized;
 }

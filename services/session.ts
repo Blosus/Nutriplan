@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { NutriAppUser } from "./auth";
 
 const SESSION_STORAGE_KEY = "@session_user";
+const POST_REGISTER_REDIRECT_KEY = "@post_register_redirect_to_login";
 
 let cachedUser: NutriAppUser | null = null;
 
@@ -40,5 +41,31 @@ export async function clearCurrentSessionUser(): Promise<void> {
     await AsyncStorage.removeItem(SESSION_STORAGE_KEY);
   } catch (error) {
     console.error("Error clearing current session user:", error);
+  }
+}
+
+export async function setPendingLoginRedirectAfterRegister(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(POST_REGISTER_REDIRECT_KEY, "true");
+  } catch (error) {
+    console.error("Error saving post-register redirect flag:", error);
+  }
+}
+
+export async function hasPendingLoginRedirectAfterRegister(): Promise<boolean> {
+  try {
+    const value = await AsyncStorage.getItem(POST_REGISTER_REDIRECT_KEY);
+    return value === "true";
+  } catch (error) {
+    console.error("Error loading post-register redirect flag:", error);
+    return false;
+  }
+}
+
+export async function clearPendingLoginRedirectAfterRegister(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(POST_REGISTER_REDIRECT_KEY);
+  } catch (error) {
+    console.error("Error clearing post-register redirect flag:", error);
   }
 }

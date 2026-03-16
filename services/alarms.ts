@@ -8,7 +8,8 @@ import {
   setDoc,
   writeBatch,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { auth, db } from "./firebase";
+import { getUserProfile, updateUserAlarmCount } from './user-profile';
 
 export type Alarm = {
   id: number;
@@ -32,6 +33,20 @@ type CloudAlarm = {
 const ALARMS_STORAGE_KEY_PREFIX = "@alarms";
 const USERS_COLLECTION = "users";
 const ALARMS_SUBCOLLECTION = "alarms";
+
+async function canUseCloud(uid: string): Promise<boolean> {
+  if (uid === "guest") {
+    return false;
+  }
+
+  try {
+    await auth.authStateReady();
+    return auth.currentUser?.uid === uid;
+  } catch (error) {
+    console.error("Error waiting for auth before cloud alarms access:", error);
+    return false;
+  }
+}
 
 const buildLocalAlarmsKey = (uid: string) => `${ALARMS_STORAGE_KEY_PREFIX}:${uid}`;
 
@@ -151,8 +166,13 @@ async function writeCloudAlarms(uid: string, alarms: Alarm[]): Promise<void> {
 export async function loadUserAlarms(uid: string): Promise<Alarm[]> {
   const localAlarms = await readLocalAlarms(uid);
 
-  if (uid === "guest") {
+  if (!(await canUseCloud(uid))) {
     return localAlarms;
+  }
+
+  const profile = await getUserProfile(uid);
+  if (profile && profile.alarmsCount === 0 && localAlarms.length === 0) {
+    return [];
   }
 
   const cloudAlarms = await readCloudAlarms(uid);
@@ -180,8 +200,9 @@ export async function saveUserAlarms(uid: string, alarms: Alarm[]): Promise<Alar
 
   await writeLocalAlarms(uid, normalized);
 
-  if (uid !== "guest") {
+  if (await canUseCloud(uid)) {
     await writeCloudAlarms(uid, normalized);
+    await updateUserAlarmCount(uid, normalized.length);
   }
 
   return normalized;
@@ -192,10 +213,11 @@ export async function deleteUserAlarm(uid: string, alarmId: number): Promise<voi
   const next = local.filter((alarm) => alarm.id !== alarmId);
   await writeLocalAlarms(uid, next);
 
-  if (uid !== "guest") {
+  if (await canUseCloud(uid)) {
     try {
       const alarmRef = doc(db, USERS_COLLECTION, uid, ALARMS_SUBCOLLECTION, String(alarmId));
       await deleteDoc(alarmRef);
+      await updateUserAlarmCount(uid, next.length);
     } catch (error) {
       console.error("Error deleting cloud alarm:", error);
     }

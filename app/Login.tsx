@@ -1,10 +1,15 @@
 import { useTheme } from '@/hooks/theme-context';
-import { simulateNutriAppLogin } from '@/services/auth';
+import { signInNutriApp } from '@/services/auth';
 import { auth } from '@/services/firebase';
-import { clearCurrentSessionUser, setCurrentSessionUser } from '@/services/session';
+import {
+  clearCurrentSessionUser,
+  clearPendingLoginRedirectAfterRegister,
+  hasPendingLoginRedirectAfterRegister,
+  setCurrentSessionUser,
+} from '@/services/session';
 import { onAuthStateChanged } from 'firebase/auth';
-import { router, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { router, type Href, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -29,23 +34,47 @@ export default function LoginScreen() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const shouldStayOnLoginAfterRegisterRef = useRef(false);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        await setCurrentSessionUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email ?? '',
-        });
-        router.replace('/(tabs)');
-      } else {
-        await clearCurrentSessionUser();
-      }
-      setIsCheckingSession(false);
-    });
+  useFocusEffect(
+    useCallback(() => {
+    let unsubscribe: (() => void) | null = null;
 
-    return unsubscribe;
-  }, []);
+    const setupAuthListener = async () => {
+      shouldStayOnLoginAfterRegisterRef.current =
+        await hasPendingLoginRedirectAfterRegister();
+
+      unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (shouldStayOnLoginAfterRegisterRef.current) {
+          if (!firebaseUser) {
+            await clearCurrentSessionUser();
+            await clearPendingLoginRedirectAfterRegister();
+            shouldStayOnLoginAfterRegisterRef.current = false;
+            setIsCheckingSession(false);
+          }
+          return;
+        }
+
+        if (firebaseUser) {
+          await setCurrentSessionUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email ?? '',
+          });
+          router.replace('/(tabs)');
+        } else {
+          await clearCurrentSessionUser();
+        }
+        setIsCheckingSession(false);
+      });
+    };
+
+    void setupAuthListener();
+
+    return () => {
+      unsubscribe?.();
+    };
+    }, [])
+  );
 
   const canSubmit = useMemo(() => {
     return (
@@ -61,7 +90,7 @@ export default function LoginScreen() {
     setIsLoading(true);
 
     try {
-      const user = await simulateNutriAppLogin(email.trim(), password);
+      const user = await signInNutriApp(email.trim(), password);
       await setCurrentSessionUser(user);
       router.replace('/(tabs)');
     } catch (error) {
