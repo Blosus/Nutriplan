@@ -1,22 +1,13 @@
 import { useTheme } from "@/hooks/theme-context";
+import { Alarm, loadUserAlarms, saveUserAlarms } from "@/services/alarms";
+import { getCurrentSessionUser } from "@/services/session";
 import { Feather, FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { router, useFocusEffect } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, FlatList, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
 import { LineChart, ProgressChart } from "react-native-chart-kit";
 import { getIndexStyles, screenWidth } from '../styles/index.styles';
-
-type Alarm = {
-  id: number;
-  hour: number;
-  minute: number;
-  name: string;
-  description: string;
-  enabled: boolean;
-  notifId?: string;
-};
 
 type DietProgress = {
   calories: {
@@ -39,6 +30,7 @@ export default function HomeScreen() {
   const { colors, theme } = useTheme();
   const styles = getIndexStyles(colors);
   const [alarms, setAlarms] = useState<Alarm[]>([]);
+  const [ownerUid, setOwnerUid] = useState("guest");
   const [activeTab, setActiveTab] = useState<'alarms' | 'diet'>('alarms');
   const [dietProgress, setDietProgress] = useState<DietProgress>({
     calories: {
@@ -58,8 +50,12 @@ export default function HomeScreen() {
   });
 
   const loadAlarms = async () => {
-    const raw = await AsyncStorage.getItem("@alarms");
-    if (raw) setAlarms(JSON.parse(raw));
+    const sessionUser = await getCurrentSessionUser();
+    const uid = sessionUser?.uid ?? "guest";
+    setOwnerUid(uid);
+
+    const loaded = await loadUserAlarms(uid);
+    setAlarms(loaded);
   };
 
   useFocusEffect(() => {
@@ -68,7 +64,13 @@ export default function HomeScreen() {
 
   useEffect(() => {
     Notifications.setNotificationHandler({
-      handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: false })
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      })
     });
 
     (async () => {
@@ -115,18 +117,11 @@ export default function HomeScreen() {
           body: updatedAlarm.description || "¡Es hora!",
           sound: true,
           data: { alarmId: updatedAlarm.id },
-          android: {
-            channelId: 'alarm-channel',
-            priority: 'max',
-            sticky: true,
-            vibrate: true,
-          }
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
           hour: updatedAlarm.hour,
           minute: updatedAlarm.minute,
-          repeats: true,
         },
       });
       updatedAlarm.notifId = notifId;
@@ -139,7 +134,7 @@ export default function HomeScreen() {
 
     const updatedAlarms = alarms.map(a => a.id === alarm.id ? updatedAlarm : a);
     setAlarms(updatedAlarms);
-    await AsyncStorage.setItem("@alarms", JSON.stringify(updatedAlarms));
+    await saveUserAlarms(ownerUid, updatedAlarms);
   };
 
   const removeAlarm = async (alarm: Alarm) => {
@@ -148,7 +143,7 @@ export default function HomeScreen() {
     }
     const next = alarms.filter((a) => a.id !== alarm.id);
     setAlarms(next);
-    await AsyncStorage.setItem("@alarms", JSON.stringify(next));
+    await saveUserAlarms(ownerUid, next);
   };
 
   const formatTime = (hour: number, minute: number) => {
@@ -241,7 +236,7 @@ export default function HomeScreen() {
                   `rgba(66, 165, 245, ${opacity})`,
                   `rgba(102, 187, 106, ${opacity})`
                 ];
-                return chartColors[index];
+                return chartColors[index ?? 0];
               },
               labelColor: () => colors.text,
               style: {
@@ -412,7 +407,7 @@ export default function HomeScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.push("ajustes")}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push("/(tabs)/ajustes")}>
           <Ionicons name="cog" size={24} color={colors.accent} />
         </TouchableOpacity>
         
@@ -427,7 +422,7 @@ export default function HomeScreen() {
         
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => activeTab === 'alarms' ? router.push("newAlarm") : null}
+          onPress={() => activeTab === 'alarms' ? router.push("/(tabs)/newAlarm") : null}
         >
           <Ionicons name={activeTab === 'alarms' ? "add-circle" : "refresh"} size={32} color={colors.accent} />
         </TouchableOpacity>
@@ -504,7 +499,7 @@ export default function HomeScreen() {
               </Text>
               <TouchableOpacity
                 style={styles.emptyStateButton}
-                onPress={() => router.push("newAlarm")}
+                onPress={() => router.push("/(tabs)/newAlarm")}
               >
                 <Text style={styles.emptyStateButtonText}>Crear Alarma</Text>
                 <Ionicons name="arrow-forward" size={18} color="#121212" />
@@ -568,7 +563,12 @@ export default function HomeScreen() {
                     
                     <TouchableOpacity
                       style={styles.editAlarmButton}
-                      onPress={() => router.push(`editAlarma?id=${item.id}`)}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(tabs)/editAlarma",
+                          params: { id: String(item.id) },
+                        })
+                      }
                     >
                       <Feather name="edit-2" size={18} color={colors.accent} />
                     </TouchableOpacity>

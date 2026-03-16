@@ -1,7 +1,19 @@
 // app/index.styles.ts
-import { Dimensions, StyleSheet } from 'react-native';
+import { Dimensions, Platform, StyleSheet } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
+
+const displayFont = Platform.select({
+  ios: 'Avenir Next',
+  android: 'sans-serif-condensed',
+  default: 'System',
+});
+
+const textFont = Platform.select({
+  ios: 'Avenir Next',
+  android: 'sans-serif',
+  default: 'System',
+});
 
 export const getIndexStyles = (colors: any) => StyleSheet.create({
   container: {
@@ -36,6 +48,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     fontSize: 24,
     fontWeight: "700",
+    fontFamily: displayFont,
   },
   stepIndicator: {
     backgroundColor: colors.surface,
@@ -46,6 +59,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginTop: 5,
+    fontFamily: textFont,
   },
   addButton: {
     width: 40,
@@ -80,6 +94,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: textFont,
   },
   activeTabText: {
     color: colors.background,
@@ -117,11 +132,13 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 12,
     fontWeight: "500",
+    fontFamily: textFont,
   },
   summaryValue: {
     color: colors.text,
     fontSize: 24,
     fontWeight: "700",
+    fontFamily: displayFont,
   },
   summaryDivider: {
     width: 1,
@@ -159,6 +176,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     letterSpacing: 0.5,
+    fontFamily: displayFont,
   },
   alarmTimeActive: {
     color: colors.accent,
@@ -181,6 +199,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
     color: colors.text,
+    fontFamily: textFont,
   },
   alarmDetails: {
     gap: 6,
@@ -189,6 +208,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: "600",
+    fontFamily: textFont,
   },
   descriptionContainer: {
     flexDirection: "row",
@@ -199,6 +219,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 14,
     flex: 1,
+    fontFamily: textFont,
   },
   alarmControls: {
     flexDirection: "row",
@@ -217,6 +238,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     fontWeight: "500",
+    fontFamily: textFont,
   },
   deleteButton: {
     width: 36,
@@ -263,6 +285,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     fontWeight: "700",
     marginBottom: 10,
     textAlign: "center",
+    fontFamily: displayFont,
   },
   emptyStateText: {
     color: colors.textSecondary,
@@ -270,6 +293,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     textAlign: "center",
     marginBottom: 25,
     lineHeight: 22,
+    fontFamily: textFont,
   },
   emptyStateButton: {
     backgroundColor: colors.accent,
@@ -285,6 +309,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     color: colors.background,
     fontSize: 16,
     fontWeight: "700",
+    fontFamily: textFont,
   },
   // Diet Tab Styles
   dietContent: {
@@ -303,10 +328,12 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     fontSize: 20,
     fontWeight: "700",
+    fontFamily: displayFont,
   },
   dietDate: {
     color: colors.textSecondary,
     fontSize: 14,
+    fontFamily: textFont,
   },
   streakCard: {
     backgroundColor: colors.surface,
@@ -336,11 +363,13 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 12,
     fontWeight: "500",
+    fontFamily: textFont,
   },
   streakValue: {
     color: colors.accent,
     fontSize: 28,
     fontWeight: "700",
+    fontFamily: displayFont,
   },
   editButton: {
     width: 36,
@@ -363,6 +392,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 15,
+    fontFamily: displayFont,
   },
   chartHeader: {
     marginBottom: 10,
@@ -370,6 +400,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
   chartSubtitle: {
     color: colors.textSecondary,
     fontSize: 14,
+    fontFamily: textFont,
   },
   lineChart: {
     marginVertical: 16,
@@ -403,12 +434,14 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     width: 70,
+    fontFamily: textFont,
   },
   statValue: {
     color: colors.text,
     fontSize: 14,
     fontWeight: "600",
     flex: 1,
+    fontFamily: textFont,
   },
   chartStats: {
     flexDirection: "row",
@@ -418,6 +451,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
   chartStat: {
     color: colors.text,
     fontSize: 14,
+    fontFamily: textFont,
   },
   chartStatLabel: {
     color: colors.textSecondary,
@@ -425,6 +459,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
   chartStatValue: {
     color: colors.accent,
     fontWeight: "600",
+    fontFamily: textFont,
   },
   quickControls: {
     gap: 20,
@@ -437,6 +472,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: "600",
+    fontFamily: textFont,
   },
   controlButtons: {
     flexDirection: "row",
@@ -455,6 +491,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: textFont,
   },
   detailButton: {
     flexDirection: "row",
@@ -471,6 +508,7 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     color: colors.accent,
     fontSize: 16,
     fontWeight: "600",
+    fontFamily: textFont,
   },
   tipCard: {
     backgroundColor: colors.surface,
@@ -498,11 +536,13 @@ export const getIndexStyles = (colors: any) => StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 5,
+    fontFamily: displayFont,
   },
   tipText: {
     color: colors.text,
     fontSize: 14,
     lineHeight: 20,
+    fontFamily: textFont,
   },
 });
 

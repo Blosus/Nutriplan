@@ -1,6 +1,7 @@
 import { useTheme } from '@/hooks/theme-context';
+import { Alarm, loadUserAlarms, saveUserAlarms } from '@/services/alarms';
+import { getCurrentSessionUser } from '@/services/session';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -20,15 +21,17 @@ import {
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
-type Alarm = {
-  id: number;
-  hour: number;
-  minute: number;
-  name: string;
-  description: string;
-  enabled: boolean;
-  notifId?: string;
-};
+const displayFont = Platform.select({
+  ios: 'Avenir Next',
+  android: 'sans-serif-condensed',
+  default: 'System',
+});
+
+const textFont = Platform.select({
+  ios: 'Avenir Next',
+  android: 'sans-serif',
+  default: 'System',
+});
 
 export default function EditAlarma() {
   const { colors, theme } = useTheme();
@@ -44,6 +47,7 @@ export default function EditAlarma() {
   const [name, setName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [enabled, setEnabled] = useState<boolean>(false);
+  const [ownerUid, setOwnerUid] = useState('guest');
   const [isReady, setIsReady] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
@@ -55,8 +59,11 @@ export default function EditAlarma() {
         ]);
         return;
       }
-      const raw = await AsyncStorage.getItem('@alarms');
-      const list: Alarm[] = raw ? JSON.parse(raw) : [];
+      const sessionUser = await getCurrentSessionUser();
+      const uid = sessionUser?.uid ?? 'guest';
+      setOwnerUid(uid);
+
+      const list = await loadUserAlarms(uid);
       const found = list.find(a => String(a.id) === String(idParam));
       if (found) {
         setAlarm(found);
@@ -150,14 +157,13 @@ export default function EditAlarma() {
       newNotifId = notifId;
     }
 
-    const raw = await AsyncStorage.getItem('@alarms');
-    const list: Alarm[] = raw ? JSON.parse(raw) : [];
+    const list = await loadUserAlarms(ownerUid);
     const next = list.map(a =>
       a.id === alarm.id
         ? { ...a, hour, minute, name, description, enabled, notifId: newNotifId }
         : a
     );
-    await AsyncStorage.setItem('@alarms', JSON.stringify(next));
+    await saveUserAlarms(ownerUid, next);
     router.back();
   };
 
@@ -168,10 +174,9 @@ export default function EditAlarma() {
         await Notifications.cancelScheduledNotificationAsync(alarm.notifId);
       } catch {}
     }
-    const raw = await AsyncStorage.getItem('@alarms');
-    const list: Alarm[] = raw ? JSON.parse(raw) : [];
+    const list = await loadUserAlarms(ownerUid);
     const next = list.filter(a => a.id !== alarm.id);
-    await AsyncStorage.setItem('@alarms', JSON.stringify(next));
+    await saveUserAlarms(ownerUid, next);
     router.back();
   };
 
@@ -341,6 +346,7 @@ function getDynamicStyles(colors: any) {
       color: colors.text,
       fontSize: 22,
       fontWeight: '700',
+      fontFamily: displayFont,
     },
     stepIndicator: {
       backgroundColor: colors.surface,
@@ -351,6 +357,7 @@ function getDynamicStyles(colors: any) {
       fontSize: 12,
       fontWeight: '600',
       marginTop: 5,
+      fontFamily: textFont,
     },
     headerPlaceholder: { width: 40 },
     scrollContent: { 
@@ -372,13 +379,15 @@ function getDynamicStyles(colors: any) {
       color: colors.accent, 
       fontSize: 18, 
       fontWeight: '700', 
-      marginBottom: 8 
+      marginBottom: 8,
+      fontFamily: displayFont,
     },
     sectionDescription: { 
       color: colors.textSecondary, 
       fontSize: 14, 
       marginBottom: 20, 
-      lineHeight: 20 
+      lineHeight: 20,
+      fontFamily: textFont,
     },
     timeSelector: { 
       backgroundColor: colors.background, 
@@ -404,12 +413,14 @@ function getDynamicStyles(colors: any) {
       color: colors.textSecondary, 
       fontSize: 12, 
       fontWeight: '500', 
-      marginBottom: 4 
+      marginBottom: 4,
+      fontFamily: textFont,
     },
     timeValue: { 
       color: colors.text, 
       fontSize: 20, 
-      fontWeight: '700' 
+      fontWeight: '700',
+      fontFamily: displayFont,
     },
     timeTip: { 
       flexDirection: 'row', 
@@ -424,7 +435,8 @@ function getDynamicStyles(colors: any) {
     timeTipText: { 
       color: colors.text, 
       fontSize: 14, 
-      flex: 1 
+      flex: 1,
+      fontFamily: textFont,
     },
     inputContainer: { 
       backgroundColor: colors.background, 
@@ -440,12 +452,14 @@ function getDynamicStyles(colors: any) {
       flex: 1, 
       color: colors.text, 
       fontSize: 16, 
-      paddingVertical: 16 
+      paddingVertical: 16,
+      fontFamily: textFont,
     },
     charCounter: { 
       color: colors.textSecondary, 
       fontSize: 12, 
-      marginLeft: 10 
+      marginLeft: 10,
+      fontFamily: textFont,
     },
     textAreaContainer: { 
       backgroundColor: colors.background, 
@@ -468,13 +482,15 @@ function getDynamicStyles(colors: any) {
       minHeight: 120,
       maxHeight: 200,
       textAlignVertical: 'top',
+      fontFamily: textFont,
     },
     textAreaCounter: { 
       color: colors.textSecondary, 
       fontSize: 12, 
       textAlign: 'right', 
       paddingHorizontal: 15, 
-      paddingBottom: 10 
+      paddingBottom: 10,
+      fontFamily: textFont,
     },
     settingItem: { 
       flexDirection: 'row', 
@@ -492,7 +508,8 @@ function getDynamicStyles(colors: any) {
     settingLabel: { 
       color: colors.text, 
       fontSize: 16, 
-      fontWeight: '500' 
+      fontWeight: '500',
+      fontFamily: textFont,
     },
     buttonContainer: { 
       position: 'absolute', 
@@ -526,7 +543,8 @@ function getDynamicStyles(colors: any) {
     saveButtonText: { 
       color: colors.background, 
       fontSize: 16, 
-      fontWeight: '700' 
+      fontWeight: '700',
+      fontFamily: textFont,
     },
   });
 }

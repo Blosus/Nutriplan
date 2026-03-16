@@ -12,7 +12,7 @@ const textFont = Platform.select({
   default: 'System',
 });
 
-export const getLoginStyles = (colors: any) =>
+export const getRegistroStyles = (colors: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -23,8 +23,8 @@ export const getLoginStyles = (colors: any) =>
     },
     backgroundOrbTop: {
       position: 'absolute',
-      top: -80,
-      right: -50,
+      top: -90,
+      left: -60,
       width: 220,
       height: 220,
       borderRadius: 110,
@@ -32,12 +32,53 @@ export const getLoginStyles = (colors: any) =>
     },
     backgroundOrbBottom: {
       position: 'absolute',
-      bottom: -100,
-      left: -70,
-      width: 260,
-      height: 260,
-      borderRadius: 130,
+      bottom: -110,
+      right: -60,
+      width: 250,
+      height: 250,
+      borderRadius: 125,
       backgroundColor: colors.accent + '0D',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 18,
+      paddingHorizontal: 2,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    headerTitleContainer: {
+      alignItems: 'center',
+      flex: 1,
+    },
+    headerTitle: {
+      color: colors.text,
+      fontSize: 21,
+      fontWeight: '700',
+      fontFamily: displayFont,
+    },
+    stepIndicator: {
+      backgroundColor: colors.surface,
+      color: colors.accent,
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderRadius: 20,
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 5,
+      fontFamily: textFont,
+    },
+    headerPlaceholder: {
+      width: 40,
     },
     card: {
       backgroundColor: colors.surface,
@@ -111,7 +152,7 @@ export const getLoginStyles = (colors: any) =>
       marginTop: -2,
       fontFamily: textFont,
     },
-    loginButton: {
+    primaryButton: {
       marginTop: 8,
       backgroundColor: colors.accent,
       borderRadius: 16,
@@ -119,10 +160,10 @@ export const getLoginStyles = (colors: any) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    loginButtonDisabled: {
+    primaryButtonDisabled: {
       opacity: 0.6,
     },
-    loginButtonText: {
+    primaryButtonText: {
       color: colors.background,
       fontSize: 16,
       fontWeight: '800',

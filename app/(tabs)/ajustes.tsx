@@ -1,19 +1,93 @@
 import { useTheme } from "@/hooks/theme-context";
+import { signOutNutriApp } from "@/services/auth";
+import { clearCurrentSessionUser, getCurrentSessionUser } from "@/services/session";
+import { DEFAULT_USER_SETTINGS, loadUserSettings, saveUserSettings } from "@/services/user-settings";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
-import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
+import { Alert } from "react-native";
+
+const displayFont = Platform.select({
+  ios: 'Avenir Next',
+  android: 'sans-serif-condensed',
+  default: 'System',
+});
+
+const textFont = Platform.select({
+  ios: 'Avenir Next',
+  android: 'sans-serif',
+  default: 'System',
+});
 
 export default function AjustesScreen() {
   const { colors, theme, toggleTheme } = useTheme();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [vibracionEnabled, setVibracionEnabled] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(DEFAULT_USER_SETTINGS.notificationsEnabled);
+  const [soundEnabled, setSoundEnabled] = useState(DEFAULT_USER_SETTINGS.soundEnabled);
+  const [vibracionEnabled, setVibracionEnabled] = useState(DEFAULT_USER_SETTINGS.vibracionEnabled);
+  const [settingsOwnerId, setSettingsOwnerId] = useState("guest");
+  const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const currentUser = await getCurrentSessionUser();
+        const ownerUid = currentUser?.uid ?? "guest";
+        setSettingsOwnerId(ownerUid);
+
+        const settings = await loadUserSettings(ownerUid);
+        setNotificationsEnabled(settings.notificationsEnabled);
+        setSoundEnabled(settings.soundEnabled);
+        setVibracionEnabled(settings.vibracionEnabled);
+      } catch (error) {
+        console.error("Error loading user settings:", error);
+      } finally {
+        setIsSettingsLoaded(true);
+      }
+    };
+
+    void loadSettings();
+  }, []);
+
+  useEffect(() => {
+    if (!isSettingsLoaded) {
+      return;
+    }
+
+    const saveSettings = async () => {
+      try {
+        await saveUserSettings(settingsOwnerId, {
+          notificationsEnabled,
+          soundEnabled,
+          vibracionEnabled,
+        });
+      } catch (error) {
+        console.error("Error saving user settings:", error);
+      }
+    };
+
+    void saveSettings();
+  }, [notificationsEnabled, soundEnabled, vibracionEnabled, isSettingsLoaded, settingsOwnerId]);
 
   const handleThemeToggle = async (value: boolean) => {
     if (value !== (theme === "dark")) {
       await toggleTheme();
     }
+  };
+
+  const handleLogout = () => {
+    Alert.alert("Cerrar sesion", "Seguro que deseas cerrar sesion?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Cerrar sesion",
+        style: "destructive",
+        onPress: async () => {
+          await signOutNutriApp();
+          await clearCurrentSessionUser();
+          router.replace("/Login");
+        },
+      },
+    ]);
   };
 
   return (
@@ -114,6 +188,16 @@ export default function AjustesScreen() {
           </View>
         </View>
 
+        {/* Cuenta */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.accent }]}>Cuenta</Text>
+
+          <TouchableOpacity style={styles.dangerButton} activeOpacity={0.8} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={20} color="#FF5252" />
+            <Text style={styles.dangerButtonText}>Cerrar sesion</Text>
+          </TouchableOpacity>
+        </View>
+
       </ScrollView>
     </View>
   );
@@ -163,6 +247,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginTop: 5,
+    fontFamily: textFont,
   },
   headerPlaceholder: {
     width: 40,
@@ -179,6 +264,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 12,
+    fontFamily: displayFont,
   },
   settingItem: {
     flexDirection: "row",
@@ -202,6 +288,7 @@ const styles = StyleSheet.create({
     color: "#FFF8E1",
     fontSize: 16,
     fontWeight: "500",
+    fontFamily: textFont,
   },
   infoItem: {
     flexDirection: "row",
@@ -217,11 +304,13 @@ const styles = StyleSheet.create({
     color: "#FFF8E1",
     fontSize: 14,
     fontWeight: "500",
+    fontFamily: textFont,
   },
   infoValue: {
     color: "#FFD54F",
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: textFont,
   },
   dangerButton: {
     flexDirection: "row",
@@ -239,5 +328,6 @@ const styles = StyleSheet.create({
     color: "#FF5252",
     fontSize: 16,
     fontWeight: "600",
+    fontFamily: textFont,
   },
 });

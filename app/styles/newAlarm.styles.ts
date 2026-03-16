@@ -1,4 +1,16 @@
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
+
+const displayFont = Platform.select({
+  ios: 'Avenir Next',
+  android: 'sans-serif-condensed',
+  default: 'System',
+});
+
+const textFont = Platform.select({
+  ios: 'Avenir Next',
+  android: 'sans-serif',
+  default: 'System',
+});
 
 export const getNewAlarmStyles = (colors: any) => StyleSheet.create({
   container: {
@@ -33,7 +45,7 @@ export const getNewAlarmStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     fontSize: 22,
     fontWeight: "700",
-    fontFamily: 'Montserrat_700Bold',
+    fontFamily: displayFont,
   },
   stepIndicator: {
     backgroundColor: colors.surface,
@@ -44,6 +56,7 @@ export const getNewAlarmStyles = (colors: any) => StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginTop: 5,
+    fontFamily: textFont,
   },
   headerPlaceholder: {
     width: 40,
@@ -65,12 +78,14 @@ export const getNewAlarmStyles = (colors: any) => StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 8,
+    fontFamily: displayFont,
   },
   sectionDescription: {
     color: colors.textSecondary,
     fontSize: 14,
     marginBottom: 20,
     lineHeight: 20,
+    fontFamily: textFont,
   },
   timeSelector: {
     backgroundColor: colors.background,
@@ -99,11 +114,13 @@ export const getNewAlarmStyles = (colors: any) => StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
     marginBottom: 4,
+    fontFamily: textFont,
   },
   timeValue: {
     color: colors.text,
     fontSize: 20,
     fontWeight: "700",
+    fontFamily: displayFont,
   },
   timeTip: {
     flexDirection: "row",
@@ -119,6 +136,7 @@ export const getNewAlarmStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     flex: 1,
+    fontFamily: textFont,
   },
   inputContainer: {
     backgroundColor: colors.background,
@@ -137,12 +155,13 @@ export const getNewAlarmStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     paddingVertical: 16,
-    fontFamily: 'Poppins_400Regular',
+    fontFamily: textFont,
   },
   charCounter: {
     color: colors.textSecondary,
     fontSize: 12,
     marginLeft: 10,
+    fontFamily: textFont,
   },
   textAreaContainer: {
     backgroundColor: colors.background,
@@ -160,7 +179,7 @@ export const getNewAlarmStyles = (colors: any) => StyleSheet.create({
     fontSize: 16,
     paddingVertical: 16,
     paddingHorizontal: 45,
-    fontFamily: 'Poppins_400Regular',
+    fontFamily: textFont,
     minHeight: 120,
   },
   textAreaCounter: {
@@ -169,6 +188,7 @@ export const getNewAlarmStyles = (colors: any) => StyleSheet.create({
     textAlign: "right",
     paddingHorizontal: 15,
     paddingBottom: 10,
+    fontFamily: textFont,
   },
   settingItem: {
     flexDirection: "row",
@@ -190,6 +210,7 @@ export const getNewAlarmStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: "500",
+    fontFamily: textFont,
   },
   settingBadge: {
     backgroundColor: "rgba(76, 175, 80, 0.2)",
@@ -201,6 +222,7 @@ export const getNewAlarmStyles = (colors: any) => StyleSheet.create({
     color: "#4CAF50",
     fontSize: 12,
     fontWeight: "700",
+    fontFamily: textFont,
   },
   buttonContainer: {
     position: "absolute",
@@ -228,6 +250,6 @@ export const getNewAlarmStyles = (colors: any) => StyleSheet.create({
     color: colors.background,
     fontSize: 16,
     fontWeight: "700",
-    fontFamily: 'Poppins_600SemiBold',
+    fontFamily: textFont,
   },
 });

@@ -1,4 +1,16 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
+
+const displayFont = Platform.select({
+  ios: 'Avenir Next',
+  android: 'sans-serif-condensed',
+  default: 'System',
+});
+
+const textFont = Platform.select({
+  ios: 'Avenir Next',
+  android: 'sans-serif',
+  default: 'System',
+});
 
 export const getAlarmScreenStyles = (colors: any) => StyleSheet.create({
   container: {
@@ -17,18 +29,21 @@ export const getAlarmScreenStyles = (colors: any) => StyleSheet.create({
     fontWeight: '700',
     color: colors.accent,
     marginBottom: 8,
+    fontFamily: displayFont,
   },
   time: {
     fontSize: 48,
     fontWeight: '900',
     color: colors.text,
     marginBottom: 12,
+    fontFamily: displayFont,
   },
   desc: {
     fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
+    fontFamily: textFont,
   },
   buttons: {
     flexDirection: 'row',
@@ -45,5 +60,6 @@ export const getAlarmScreenStyles = (colors: any) => StyleSheet.create({
   buttonText: {
     fontWeight: '700',
     fontSize: 16,
+    fontFamily: textFont,
   }
 });

@@ -1,5 +1,6 @@
 import { useTheme } from '@/hooks/theme-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alarm, loadUserAlarms, saveUserAlarms } from '@/services/alarms';
+import { getCurrentSessionUser } from '@/services/session';
 import { Audio } from 'expo-av';
 import * as Notifications from 'expo-notifications';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -9,16 +10,6 @@ import { Alert, Text, TouchableOpacity, Vibration, View } from 'react-native';
 // Importamos los estilos separados
 import { getAlarmScreenStyles } from '../styles/alarmScreen.styles';
 
-type Alarm = {
-  id: number;
-  hour: number;
-  minute: number;
-  name: string;
-  description: string;
-  enabled: boolean;
-  notifId?: string;
-};
-
 export default function AlarmScreen() {
   const { colors } = useTheme();
   const styles = getAlarmScreenStyles(colors);
@@ -27,13 +18,17 @@ export default function AlarmScreen() {
   const idParam = params.id as string | undefined;
 
   const [alarm, setAlarm] = useState<Alarm | null>(null);
+  const [ownerUid, setOwnerUid] = useState('guest');
   const soundRef = useRef<Audio.Sound | null>(null);
 
   useEffect(() => {
     const load = async () => {
       if (!idParam) return;
-      const raw = await AsyncStorage.getItem('@alarms');
-      const list: Alarm[] = raw ? JSON.parse(raw) : [];
+      const sessionUser = await getCurrentSessionUser();
+      const uid = sessionUser?.uid ?? 'guest';
+      setOwnerUid(uid);
+
+      const list = await loadUserAlarms(uid);
       const found = list.find(a => String(a.id) === String(idParam));
       if (found) setAlarm(found);
     };
@@ -108,10 +103,9 @@ export default function AlarmScreen() {
       try { await Notifications.cancelScheduledNotificationAsync(alarm.notifId); } catch (e) {}
     }
     // actualizar almacenamiento
-    const raw = await AsyncStorage.getItem('@alarms');
-    const list: Alarm[] = raw ? JSON.parse(raw) : [];
+    const list = await loadUserAlarms(ownerUid);
     const next = list.map(a => a.id === alarm.id ? { ...a, enabled: false, notifId: undefined } : a);
-    await AsyncStorage.setItem('@alarms', JSON.stringify(next));
+    await saveUserAlarms(ownerUid, next);
 
     dismiss();
   };

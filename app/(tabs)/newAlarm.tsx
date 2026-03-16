@@ -1,6 +1,7 @@
 import { useTheme } from "@/hooks/theme-context";
+import { Alarm, loadUserAlarms, saveUserAlarms } from "@/services/alarms";
+import { getCurrentSessionUser } from "@/services/session";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -18,6 +19,9 @@ export default function NewAlarmScreen() {
 
   const saveAlarm = async () => {
     if (!date) return;
+
+    const sessionUser = await getCurrentSessionUser();
+    const ownerUid = sessionUser?.uid ?? "guest";
 
     const hour = date.getHours();
     const minute = date.getMinutes();
@@ -37,10 +41,9 @@ export default function NewAlarmScreen() {
       } as any,
     });
 
-    const raw = await AsyncStorage.getItem("@alarms");
-    const alarms = raw ? JSON.parse(raw) : [];
+    const alarms = await loadUserAlarms(ownerUid);
 
-    const newAlarm = {
+    const newAlarm: Alarm = {
       id: Date.now(),
       hour,
       minute,
@@ -50,10 +53,7 @@ export default function NewAlarmScreen() {
       notifId,
     };
 
-    await AsyncStorage.setItem(
-      "@alarms",
-      JSON.stringify([...alarms, newAlarm])
-    );
+    await saveUserAlarms(ownerUid, [...alarms, newAlarm]);
 
     router.back();
   };

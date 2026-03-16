@@ -1,12 +1,12 @@
 import { useTheme } from '@/hooks/theme-context';
-import { simulateNutriAppLogin } from '@/services/auth';
-import { auth } from '@/services/firebase';
-import { clearCurrentSessionUser, setCurrentSessionUser } from '@/services/session';
-import { onAuthStateChanged } from 'firebase/auth';
+import { simulateNutriAppRegister } from '@/services/auth';
+import { setCurrentSessionUser } from '@/services/session';
+import { Ionicons } from '@expo/vector-icons';
 import { router, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -16,59 +16,48 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { getLoginStyles } from './styles/login.styles';
+import { getRegistroStyles } from './styles/registro.styles';
 
-export default function LoginScreen() {
+export default function RegistroScreen() {
   const { colors } = useTheme();
-  const styles = getLoginStyles(colors);
-  const registerRoute = '/registro' as Href;
+  const styles = getRegistroStyles(colors);
+  const loginRoute = '/Login' as Href;
   const placeholderColor = 'rgba(140, 140, 140, 0.45)';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        await setCurrentSessionUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email ?? '',
-        });
-        router.replace('/(tabs)');
-      } else {
-        await clearCurrentSessionUser();
-      }
-      setIsCheckingSession(false);
-    });
-
-    return unsubscribe;
-  }, []);
 
   const canSubmit = useMemo(() => {
     return (
       email.trim().length > 0 &&
       password.trim().length > 0 &&
-      !isLoading &&
-      !isCheckingSession
+      confirmPassword.trim().length > 0 &&
+      !isLoading
     );
-  }, [email, password, isLoading, isCheckingSession]);
+  }, [email, password, confirmPassword, isLoading]);
 
-  const onLogin = async () => {
+  const onRegister = async () => {
     setErrorMessage('');
     setIsLoading(true);
 
     try {
-      const user = await simulateNutriAppLogin(email.trim(), password);
+      const user = await simulateNutriAppRegister(
+        email.trim(),
+        password,
+        confirmPassword
+      );
       await setCurrentSessionUser(user);
-      router.replace('/(tabs)');
+      Alert.alert('Registro correcto', `Cuenta creada para ${user.email}`, [
+        { text: 'Continuar', onPress: () => router.replace(loginRoute) },
+      ]);
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : 'No se pudo iniciar sesion. Intentalo de nuevo.';
+          : 'No se pudo completar el registro. Intentalo de nuevo.';
       setErrorMessage(message);
     } finally {
       setIsLoading(false);
@@ -84,13 +73,29 @@ export default function LoginScreen() {
         <View style={styles.backgroundOrbTop} />
         <View style={styles.backgroundOrbBottom} />
 
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.replace(loginRoute)}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.accent} />
+          </TouchableOpacity>
+
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>Registro</Text>
+            <Text style={styles.stepIndicator}>Acceso nuevo</Text>
+          </View>
+
+          <View style={styles.headerPlaceholder} />
+        </View>
+
         <View style={styles.card}>
           <View style={styles.brandBadge}>
             <Text style={styles.brandBadgeText}>NutriApp</Text>
           </View>
 
-          <Text style={styles.title}>Iniciar sesion</Text>
-          <Text style={styles.subtitle}>Accede a tus alarmas y a tu progreso diario.</Text>
+          <Text style={styles.title}>Crear cuenta</Text>
+          <Text style={styles.subtitle}>Crea tu acceso para guardar tu progreso personal.</Text>
 
           <View>
             <Text style={styles.label}>Correo electronico</Text>
@@ -110,35 +115,49 @@ export default function LoginScreen() {
             <Text style={styles.label}>Contrasena</Text>
             <TextInput
               style={[styles.input, !!errorMessage && styles.inputError]}
-              placeholder="Tu contrasena"
+              placeholder="Minimo 6 caracteres"
               placeholderTextColor={placeholderColor}
               value={password}
               onChangeText={setPassword}
               autoCapitalize="none"
               secureTextEntry
-              autoComplete="password"
+              autoComplete="password-new"
+            />
+          </View>
+
+          <View>
+            <Text style={styles.label}>Confirmar contrasena</Text>
+            <TextInput
+              style={[styles.input, !!errorMessage && styles.inputError]}
+              placeholder="Repite la contrasena"
+              placeholderTextColor={placeholderColor}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              autoCapitalize="none"
+              secureTextEntry
+              autoComplete="password-new"
             />
           </View>
 
           {!!errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
 
           <TouchableOpacity
-            style={[styles.loginButton, !canSubmit && styles.loginButtonDisabled]}
+            style={[styles.primaryButton, !canSubmit && styles.primaryButtonDisabled]}
             disabled={!canSubmit}
-            onPress={onLogin}
+            onPress={onRegister}
           >
             {isLoading ? (
               <ActivityIndicator color={colors.background} />
             ) : (
-              <Text style={styles.loginButtonText}>Entrar</Text>
+              <Text style={styles.primaryButtonText}>Registrarme</Text>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.secondaryButton}
-            onPress={() => router.push(registerRoute)}
+            onPress={() => router.replace(loginRoute)}
           >
-            <Text style={styles.secondaryButtonText}>Crear una cuenta</Text>
+            <Text style={styles.secondaryButtonText}>Volver al login</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
