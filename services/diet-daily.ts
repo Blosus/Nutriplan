@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { collection, doc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, doc, getDocs, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
 export type DietDailyLog = {
@@ -24,6 +24,12 @@ export type DietDailyHistoryItem = {
   mealsCount: number;
   goalMet: boolean;
   isToday: boolean;
+};
+
+export type DietRealtimePayload = {
+  today: DietDailyLog;
+  streak: DietStreakSummary;
+  recentHistory: DietDailyHistoryItem[];
 };
 
 type DailyLogRecord = Record<string, DietDailyLog>;
@@ -351,6 +357,14 @@ export async function loadRecentDietHistory(
   days = 7
 ): Promise<DietDailyHistoryItem[]> {
   const logs = await loadMergedDietDaily(uid);
+  return buildRecentHistoryFromLogs(logs, caloriesTarget, days);
+}
+
+function buildRecentHistoryFromLogs(
+  logs: DailyLogRecord,
+  caloriesTarget: number,
+  days: number
+): DietDailyHistoryItem[] {
   const totalDays = Math.max(1, Math.round(days));
   const todayKey = getTodayDateKey();
   const history: DietDailyHistoryItem[] = [];
@@ -374,4 +388,66 @@ export async function loadRecentDietHistory(
   }
 
   return history;
+}
+
+export async function subscribeDietTrackingRealtime(
+  uid: string,
+  caloriesTarget: number,
+  onUpdate: (payload: DietRealtimePayload) => void
+): Promise<() => void> {
+  const todayKey = getTodayDateKey();
+
+  if (!(await canUseCloud(uid))) {
+    const today = normalizeDailyLog({}, caloriesTarget, todayKey);
+    onUpdate({
+      today,
+      streak: { currentStreak: 0, bestStreak: 0, completedDays: 0 },
+      recentHistory: buildRecentHistoryFromLogs({}, caloriesTarget, 7),
+    });
+    return () => {};
+  }
+
+  const dietRef = collection(db, USERS_COLLECTION, uid, DIET_SUBCOLLECTION);
+
+  const unsubscribe = onSnapshot(dietRef, async (snapshot) => {
+    const logs: DailyLogRecord = {};
+
+    snapshot.docs.forEach((item) => {
+      if (!item.id.startsWith(DAILY_DOC_PREFIX)) {
+        return;
+      }
+
+      const dateKey = item.id.replace(DAILY_DOC_PREFIX, "");
+      const data = item.data() as Partial<DietDailyLog>;
+      const target = Math.max(0, Number(data.caloriesTarget ?? 0));
+
+      logs[dateKey] = normalizeDailyLog(
+        {
+          ...data,
+          dateKey,
+          caloriesTarget: target,
+          updatedAtMs: Number(data.updatedAtMs ?? Date.now()),
+        },
+        target,
+        dateKey
+      );
+    });
+
+    let today = logs[todayKey]
+      ? normalizeDailyLog(logs[todayKey], logs[todayKey].caloriesTarget || caloriesTarget, todayKey)
+      : normalizeDailyLog({}, caloriesTarget, todayKey);
+
+    if (!logs[todayKey]) {
+      logs[todayKey] = today;
+      await writeCloudDietDailyLog(uid, today);
+    }
+
+    onUpdate({
+      today,
+      streak: computeStreak(logs),
+      recentHistory: buildRecentHistoryFromLogs(logs, caloriesTarget, 7),
+    });
+  });
+
+  return unsubscribe;
 }

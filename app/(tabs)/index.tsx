@@ -4,9 +4,8 @@ import {
   DietDailyHistoryItem,
   DietDailyLog,
   DietStreakSummary,
-  loadRecentDietHistory,
-  loadTodayDietTracking,
   saveTodayDietTracking,
+  subscribeDietTrackingRealtime,
 } from "@/services/diet-daily";
 import { DietProfile, getExistingUserDietProfile, isDietProfileComplete } from "@/services/user-diet-profile";
 import { getCurrentSessionUser } from "@/services/session";
@@ -38,6 +37,7 @@ export default function HomeScreen() {
   const [isSavingDietProgress, setIsSavingDietProgress] = useState(false);
   const [isLoadingDietStatus, setIsLoadingDietStatus] = useState(true);
   const latestLoadRequestRef = useRef(0);
+  const dietRealtimeUnsubscribeRef = useRef<(() => void) | null>(null);
 
   const roundToNearest50 = (value: number) => Math.round(value / 50) * 50;
   const weekdayShort = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
@@ -133,6 +133,11 @@ export default function HomeScreen() {
   };
 
   const loadDietStatus = async () => {
+    if (dietRealtimeUnsubscribeRef.current) {
+      dietRealtimeUnsubscribeRef.current();
+      dietRealtimeUnsubscribeRef.current = null;
+    }
+
     const sessionUser = await getCurrentSessionUser();
     const uid = sessionUser?.uid ?? "guest";
     const profile = await getExistingUserDietProfile(uid);
@@ -141,13 +146,18 @@ export default function HomeScreen() {
     const insights = completed ? buildDietInsights(profile) : null;
 
     if (completed && insights) {
-      const tracking = await loadTodayDietTracking(uid, insights.recommendedCalories);
-      const recentHistory = await loadRecentDietHistory(uid, insights.recommendedCalories, 7);
-      setDietTodayLog(tracking.today);
-      setDietRecentHistory(recentHistory);
-      setDietStreak(tracking.streak);
-      setCaloriesConsumedText(String(tracking.today.caloriesConsumed));
-      setMealsCountText(String(tracking.today.mealsCount));
+      const unsubscribe = await subscribeDietTrackingRealtime(
+        uid,
+        insights.recommendedCalories,
+        (payload) => {
+          setDietTodayLog(payload.today);
+          setDietRecentHistory(payload.recentHistory);
+          setDietStreak(payload.streak);
+          setCaloriesConsumedText(String(payload.today.caloriesConsumed));
+          setMealsCountText(String(payload.today.mealsCount));
+        }
+      );
+      dietRealtimeUnsubscribeRef.current = unsubscribe;
     } else {
       setDietTodayLog(null);
       setDietRecentHistory([]);
@@ -165,6 +175,13 @@ export default function HomeScreen() {
     useCallback(() => {
       void loadAlarms();
       void loadDietStatus();
+
+      return () => {
+        if (dietRealtimeUnsubscribeRef.current) {
+          dietRealtimeUnsubscribeRef.current();
+          dietRealtimeUnsubscribeRef.current = null;
+        }
+      };
     }, [])
   );
 
@@ -302,13 +319,6 @@ export default function HomeScreen() {
       setDietStreak(saved.streak);
       setCaloriesConsumedText(String(saved.today.caloriesConsumed));
       setMealsCountText(String(saved.today.mealsCount));
-
-      const recentHistory = await loadRecentDietHistory(
-        uid,
-        dietInsights.recommendedCalories,
-        7
-      );
-      setDietRecentHistory(recentHistory);
     } finally {
       setIsSavingDietProgress(false);
     }
