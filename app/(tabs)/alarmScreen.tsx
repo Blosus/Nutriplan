@@ -25,6 +25,7 @@ export default function AlarmScreen() {
   const [vibracionEnabled, setVibracionEnabled] = useState(false);
   const [vibrationPattern, setVibrationPattern] = useState<VibrationType>('NORMAL');
   const [soundName, setSoundName] = useState('sonidolol.mp3');
+  const [soundUri, setSoundUri] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -46,6 +47,7 @@ export default function AlarmScreen() {
         setVibracionEnabled(settings.vibracionEnabled);
         setVibrationPattern(settings.vibrationPattern);
         setSoundName(settings.soundName);
+        setSoundUri(settings.soundUri);
       } catch (error) {
         console.error('Error loading alarm and settings:', error);
       }
@@ -63,7 +65,7 @@ export default function AlarmScreen() {
 
       // Iniciar sonido si está habilitado
       if (soundEnabled) {
-        await AudioManager.startAlarmSound(soundEnabled);
+        await AudioManager.startAlarmSound(soundEnabled, soundUri ?? undefined);
       }
     };
 
@@ -77,7 +79,7 @@ export default function AlarmScreen() {
     return () => {
       cleanup();
     };
-  }, [soundEnabled, vibracionEnabled, vibrationPattern]);
+  }, [soundEnabled, vibracionEnabled, vibrationPattern, soundUri]);
 
   const stopSound = async () => {
     try {

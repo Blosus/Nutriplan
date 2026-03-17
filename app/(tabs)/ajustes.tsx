@@ -35,6 +35,7 @@ export default function AjustesScreen() {
   const [vibracionEnabled, setVibracionEnabled] = useState(DEFAULT_USER_SETTINGS.vibracionEnabled);
   const [vibrationPattern, setVibrationPattern] = useState<VibrationType>(DEFAULT_USER_SETTINGS.vibrationPattern);
   const [soundName, setSoundName] = useState(DEFAULT_USER_SETTINGS.soundName);
+  const [soundUri, setSoundUri] = useState<string | null>(DEFAULT_USER_SETTINGS.soundUri);
   const [settingsOwnerId, setSettingsOwnerId] = useState("guest");
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
   
@@ -55,6 +56,7 @@ export default function AjustesScreen() {
         setVibracionEnabled(settings.vibracionEnabled);
         setVibrationPattern(settings.vibrationPattern);
         setSoundName(settings.soundName);
+        setSoundUri(settings.soundUri);
       } catch (error) {
         console.error("Error loading user settings:", error);
       } finally {
@@ -78,6 +80,7 @@ export default function AjustesScreen() {
           vibracionEnabled,
           vibrationPattern,
           soundName,
+          soundUri,
           theme,
         });
       } catch (error) {
@@ -86,7 +89,7 @@ export default function AjustesScreen() {
     };
 
     void saveSettings();
-  }, [notificationsEnabled, soundEnabled, vibracionEnabled, vibrationPattern, soundName, isSettingsLoaded, settingsOwnerId]);
+  }, [notificationsEnabled, soundEnabled, vibracionEnabled, vibrationPattern, soundName, soundUri, isSettingsLoaded, settingsOwnerId]);
 
   const handleThemeToggle = async (value: boolean) => {
     if (value !== (theme === "dark")) {
@@ -265,8 +268,10 @@ export default function AjustesScreen() {
       <SoundPicker
         visible={soundPickerVisible}
         currentSound={soundName}
-        onSelect={(name, soundUri) => {
+        uid={settingsOwnerId}
+        onSelect={(name, uri) => {
           setSoundName(name);
+          setSoundUri(uri ?? null);
         }}
         onClose={() => setSoundPickerVisible(false)}
       />
