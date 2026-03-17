@@ -1,5 +1,6 @@
 import { useTheme } from "@/hooks/theme-context";
 import { Alarm, loadUserAlarms, saveUserAlarms } from "@/services/alarms";
+import { preservePreviousDaysTargetSnapshot } from "@/services/diet-daily";
 import { getCurrentSessionUser } from "@/services/session";
 import {
   DietGender,
@@ -12,7 +13,7 @@ import {
 } from "@/services/user-diet-profile";
 import { Feather, FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -61,6 +62,9 @@ function mealTimeToDate(mt: MealTime): Date {
 }
 
 export default function DietSetupScreen() {
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const modeParam = Array.isArray(params.mode) ? params.mode[0] : params.mode;
+  const isEditMode = modeParam === "edit";
   const { colors } = useTheme();
   const styles = getDietSetupStyles(colors);
   const [currentStep, setCurrentStep] = useState<SetupStep>(1);
@@ -72,8 +76,45 @@ export default function DietSetupScreen() {
   const [gender, setGender] = useState<DietGender | null>(null);
   const [mealTimes, setMealTimes] = useState<DietMealSchedule>(DEFAULT_MEAL_TIMES);
   const [activePicker, setActivePicker] = useState<MealKey | null>(null);
+  const [previousRecommendedCalories, setPreviousRecommendedCalories] = useState<number | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const roundToNearest50 = (value: number) => Math.round(value / 50) * 50;
+
+  const getRecommendedCalories = (profile: {
+    weightKg: number | null;
+    heightCm: number | null;
+    age: number | null;
+    gender: DietGender | null;
+    goal: DietGoal | null;
+  }): number | null => {
+    if (
+      profile.weightKg == null ||
+      profile.heightCm == null ||
+      profile.age == null ||
+      profile.gender == null ||
+      profile.goal == null
+    ) {
+      return null;
+    }
+
+    const heightM = profile.heightCm / 100;
+    if (!Number.isFinite(heightM) || heightM <= 0) {
+      return null;
+    }
+
+    const bmi = profile.weightKg / (heightM * heightM);
+    const bmr = profile.gender === "MALE"
+      ? 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age + 5
+      : 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age - 161;
+    const maintenanceCalories = roundToNearest50(bmr * 1.2);
+    const deficit = bmi >= 30 ? 500 : bmi >= 25 ? 400 : 300;
+
+    return profile.goal === "LOSE_WEIGHT"
+      ? roundToNearest50(Math.max(1200, maintenanceCalories - deficit))
+      : maintenanceCalories;
+  };
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -87,11 +128,15 @@ export default function DietSetupScreen() {
       setHeightText(profile.heightCm ? String(profile.heightCm) : "");
       setAgeText(profile.age ? String(profile.age) : "");
       setGender(profile.gender);
+      setPreviousRecommendedCalories(getRecommendedCalories(profile));
       if (profile.mealSchedule) {
         setMealTimes(profile.mealSchedule);
       }
 
-      if (!profile.goal) {
+      if (isEditMode) {
+        // In edit mode the user always starts from step 1 to re-run the questionnaire.
+        setCurrentStep(1);
+      } else if (!profile.goal) {
         setCurrentStep(1);
       } else if (
         profile.weightKg == null ||
@@ -110,16 +155,31 @@ export default function DietSetupScreen() {
     };
 
     void bootstrap();
-  }, []);
+  }, [isEditMode]);
 
   const stepTitle = useMemo(() => {
     if (currentStep === 1) return "Tu Objetivo";
-    if (currentStep === 2) return "Tus Medidas";
+    if (currentStep === 2) return "Tus Datos";
     return "Horarios";
   }, [currentStep]);
 
+  const confirmExitEdit = () => {
+    Alert.alert(
+      "Salir sin guardar",
+      "Si sales ahora, se conservara tu plan anterior y no se aplicaran cambios.",
+      [
+        { text: "Seguir editando", style: "cancel" },
+        { text: "Salir", style: "destructive", onPress: () => router.back() },
+      ]
+    );
+  };
+
   const goBack = () => {
     if (currentStep === 1) {
+      if (isEditMode) {
+        confirmExitEdit();
+        return;
+      }
       router.back();
       return;
     }
@@ -132,12 +192,14 @@ export default function DietSetupScreen() {
       return;
     }
 
-    setIsSaving(true);
-    await patchUserDietProfile(uid, {
-      goal,
-      completedSteps: Math.max(1, currentStep),
-    });
-    setIsSaving(false);
+    if (!isEditMode) {
+      setIsSaving(true);
+      await patchUserDietProfile(uid, {
+        goal,
+        completedSteps: Math.max(1, currentStep),
+      });
+      setIsSaving(false);
+    }
     setCurrentStep(2);
   };
 
@@ -166,22 +228,33 @@ export default function DietSetupScreen() {
       return;
     }
 
-    setIsSaving(true);
-    await patchUserDietProfile(uid, {
-      weightKg: Number(weight.toFixed(1)),
-      heightCm: Math.round(height),
-      age: Math.round(age),
-      gender,
-      completedSteps: Math.max(2, currentStep),
-    });
-    setIsSaving(false);
+    if (!isEditMode) {
+      setIsSaving(true);
+      await patchUserDietProfile(uid, {
+        weightKg: Number(weight.toFixed(1)),
+        heightCm: Math.round(height),
+        age: Math.round(age),
+        gender,
+        completedSteps: Math.max(2, currentStep),
+      });
+      setIsSaving(false);
+    }
     setCurrentStep(3);
   };
 
   const handleFinish = async () => {
     setIsSaving(true);
 
+    if (isEditMode && previousRecommendedCalories !== null) {
+      await preservePreviousDaysTargetSnapshot(uid, previousRecommendedCalories, 6);
+    }
+
     await patchUserDietProfile(uid, {
+      goal,
+      weightKg: Number(weightText.replace(",", ".")),
+      heightCm: Math.round(Number(heightText.replace(",", "."))),
+      age: Math.round(Number(ageText.replace(",", "."))),
+      gender,
       mealSchedule: mealTimes,
       completedSteps: 3,
       setupCompleted: true,
@@ -254,13 +327,24 @@ export default function DietSetupScreen() {
 
         <Text style={styles.headerTitle}>{stepTitle}</Text>
 
-        <View style={styles.stepBadge}>
-          <Text style={styles.stepBadgeText}>{`Paso ${currentStep} de 3`}</Text>
+        <View style={styles.rightActions}>
+          {isEditMode && (
+            <TouchableOpacity style={styles.exitEditButton} onPress={confirmExitEdit}>
+              <Text style={styles.exitEditText}>Salir</Text>
+            </TouchableOpacity>
+          )}
+          <View style={styles.stepBadge}>
+            <Text style={styles.stepBadgeText}>{`Paso ${currentStep} de 3`}</Text>
+          </View>
         </View>
       </View>
 
       <View style={styles.card}>
-        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent}
+        >
           {currentStep === 1 && (
             <>
               <Text style={styles.introText}>Selecciona lo que quieres lograr con tu plan nutricional:</Text>

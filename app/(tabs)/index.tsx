@@ -589,13 +589,19 @@ export default function HomeScreen() {
         
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => activeTab === 'alarms' ? router.push("/(tabs)/newAlarm") : router.push('/diet-setup' as never)}
+          onPress={() =>
+            activeTab === 'alarms'
+              ? router.push("/(tabs)/newAlarm")
+              : router.push(
+                  dietSetupCompleted
+                    ? ('/diet-setup?mode=edit' as never)
+                    : ('/diet-setup' as never)
+                )
+          }
         >
           <Ionicons name={activeTab === 'alarms' ? "add-circle" : "arrow-forward-circle"} size={32} color={colors.accent} />
         </TouchableOpacity>
       </View>
-
-      {/* Tabs de Navegación */}
       <View style={styles.tabsContainer}>
         <TouchableOpacity 
           style={[styles.tab, activeTab === 'alarms' && styles.activeTab]} 

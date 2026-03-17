@@ -308,6 +308,43 @@ export async function saveTodayDietTracking(
   };
 }
 
+export async function preservePreviousDaysTargetSnapshot(
+  uid: string,
+  caloriesTarget: number,
+  daysBack = 6
+): Promise<void> {
+  const logs = await loadMergedDietDaily(uid);
+  const todayKey = getTodayDateKey();
+  let changed = false;
+
+  for (let i = Math.max(1, daysBack); i >= 1; i--) {
+    const dateKey = addDays(todayKey, -i);
+    if (logs[dateKey]) {
+      continue;
+    }
+
+    const snapshot = normalizeDailyLog({}, caloriesTarget, dateKey);
+    logs[dateKey] = snapshot;
+    changed = true;
+  }
+
+  if (!changed) {
+    return;
+  }
+
+  await writeLocalDietDaily(uid, logs);
+
+  if (await canUseCloud(uid)) {
+    for (let i = Math.max(1, daysBack); i >= 1; i--) {
+      const dateKey = addDays(todayKey, -i);
+      const item = logs[dateKey];
+      if (item) {
+        await writeCloudDietDailyLog(uid, item);
+      }
+    }
+  }
+}
+
 export async function loadRecentDietHistory(
   uid: string,
   caloriesTarget: number,
@@ -320,8 +357,10 @@ export async function loadRecentDietHistory(
 
   for (let i = totalDays - 1; i >= 0; i--) {
     const dateKey = addDays(todayKey, -i);
-    const base = logs[dateKey]
-      ? normalizeDailyLog(logs[dateKey], caloriesTarget, dateKey)
+    const existing = logs[dateKey];
+    const preservedTarget = existing?.caloriesTarget ?? caloriesTarget;
+    const base = existing
+      ? normalizeDailyLog(existing, preservedTarget, dateKey)
       : normalizeDailyLog({}, caloriesTarget, dateKey);
 
     history.push({
