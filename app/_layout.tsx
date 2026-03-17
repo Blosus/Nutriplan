@@ -19,6 +19,7 @@ function RootNavigator() {
         <Stack.Screen name="Login" options={{ headerShown: false }} />
         <Stack.Screen name="registro" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="diet-setup" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />

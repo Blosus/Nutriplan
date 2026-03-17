@@ -1,30 +1,21 @@
 import { useTheme } from "@/hooks/theme-context";
-import { Alarm, loadUserAlarms, saveUserAlarms } from "@/services/alarms";
+import { Alarm, loadUserAlarms, saveUserAlarms, readCachedAlarms } from "@/services/alarms";
+import {
+  DietDailyHistoryItem,
+  DietDailyLog,
+  DietStreakSummary,
+  loadRecentDietHistory,
+  loadTodayDietTracking,
+  saveTodayDietTracking,
+} from "@/services/diet-daily";
+import { DietProfile, getExistingUserDietProfile, isDietProfileComplete } from "@/services/user-diet-profile";
 import { getCurrentSessionUser } from "@/services/session";
 import { Feather, FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
-import { LineChart, ProgressChart } from "react-native-chart-kit";
-import { getIndexStyles, screenWidth } from '../styles/index.styles';
-
-type DietProgress = {
-  calories: {
-    target: number;
-    consumed: number;
-  };
-  water: {
-    target: number;
-    consumed: number;
-  };
-  meals: {
-    total: number;
-    completed: number;
-  };
-  streak: number;
-  lastUpdated: string;
-};
+import { ActivityIndicator, Alert, FlatList, ScrollView, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { getIndexStyles } from '../styles/index.styles';
 
 export default function HomeScreen() {
   const { colors, theme } = useTheme();
@@ -33,46 +24,147 @@ export default function HomeScreen() {
   const [ownerUid, setOwnerUid] = useState("guest");
   const [isLoadingAlarms, setIsLoadingAlarms] = useState(true);
   const [activeTab, setActiveTab] = useState<'alarms' | 'diet'>('alarms');
-  const latestLoadRequestRef = useRef(0);
-  const [dietProgress, setDietProgress] = useState<DietProgress>({
-    calories: {
-      target: 2000,
-      consumed: 1450
-    },
-    water: {
-      target: 2000,
-      consumed: 1200
-    },
-    meals: {
-      total: 4,
-      completed: 3
-    },
-    streak: 7,
-    lastUpdated: new Date().toLocaleDateString('es-ES')
+  const [dietSetupCompleted, setDietSetupCompleted] = useState(false);
+  const [dietProfile, setDietProfile] = useState<DietProfile | null>(null);
+  const [dietTodayLog, setDietTodayLog] = useState<DietDailyLog | null>(null);
+  const [dietRecentHistory, setDietRecentHistory] = useState<DietDailyHistoryItem[]>([]);
+  const [dietStreak, setDietStreak] = useState<DietStreakSummary>({
+    currentStreak: 0,
+    bestStreak: 0,
+    completedDays: 0,
   });
+  const [caloriesConsumedText, setCaloriesConsumedText] = useState("0");
+  const [mealsCountText, setMealsCountText] = useState("0");
+  const [isSavingDietProgress, setIsSavingDietProgress] = useState(false);
+  const [isLoadingDietStatus, setIsLoadingDietStatus] = useState(true);
+  const latestLoadRequestRef = useRef(0);
+
+  const roundToNearest50 = (value: number) => Math.round(value / 50) * 50;
+  const weekdayShort = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
+
+  const formatDateLabel = (dateKey: string): string => {
+    const [year, month, day] = dateKey.split("-").map(Number);
+    const d = new Date(year, (month || 1) - 1, day || 1);
+    return `${weekdayShort[d.getDay()]} ${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}`;
+  };
+
+  const buildDietInsights = (profile: DietProfile | null) => {
+    if (
+      !isDietProfileComplete(profile) ||
+      profile?.weightKg == null ||
+      profile.heightCm == null ||
+      profile.goal == null ||
+      profile.age == null ||
+      profile.gender == null
+    ) {
+      return null;
+    }
+
+    const heightM = profile.heightCm / 100;
+    if (!Number.isFinite(heightM) || heightM <= 0) {
+      return null;
+    }
+
+    const bmi = profile.weightKg / (heightM * heightM);
+
+    let bmiCategory = "Peso normal";
+    if (bmi < 18.5) {
+      bmiCategory = "Bajo peso";
+    } else if (bmi >= 25 && bmi < 30) {
+      bmiCategory = "Sobrepeso";
+    } else if (bmi >= 30) {
+      bmiCategory = "Obesidad";
+    }
+
+    const healthyMinWeight = 18.5 * heightM * heightM;
+    const healthyMaxWeight = 24.9 * heightM * heightM;
+    const bmr = profile.gender === "MALE"
+      ? 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age + 5
+      : 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age - 161;
+    const maintenanceCalories = roundToNearest50(bmr * 1.2);
+    const deficit = bmi >= 30 ? 500 : bmi >= 25 ? 400 : 300;
+    const recommendedCalories = profile.goal === "LOSE_WEIGHT"
+      ? roundToNearest50(Math.max(1200, maintenanceCalories - deficit))
+      : maintenanceCalories;
+
+    const goalLabel = profile.goal === "LOSE_WEIGHT" ? "Bajar peso" : "Mantenerme";
+    const genderLabel = profile.gender === "MALE" ? "Hombre" : "Mujer";
+    const recommendationText = profile.goal === "LOSE_WEIGHT"
+      ? `Tu objetivo actual es perder peso, por eso la recomendación usa un déficit de ${deficit} kcal sobre tu mantenimiento estimado a partir de peso, altura, edad y género.`
+      : "Tu objetivo actual es mantenerte, por eso la recomendación muestra tus calorías estimadas de mantenimiento según peso, altura, edad y género.";
+
+    return {
+      bmi,
+      bmiCategory,
+      healthyMinWeight,
+      healthyMaxWeight,
+      maintenanceCalories,
+      recommendedCalories,
+      goalLabel,
+      genderLabel,
+      recommendationText,
+    };
+  };
 
   const loadAlarms = async () => {
     const requestId = latestLoadRequestRef.current + 1;
     latestLoadRequestRef.current = requestId;
 
-    setIsLoadingAlarms(true);
-
     const sessionUser = await getCurrentSessionUser();
     const uid = sessionUser?.uid ?? "guest";
-    const loaded = await loadUserAlarms(uid);
 
-    if (requestId !== latestLoadRequestRef.current) {
-      return;
+    // Fase 1: mostrar datos cacheados inmediatamente desde AsyncStorage
+    const cached = await readCachedAlarms(uid);
+    if (requestId === latestLoadRequestRef.current) {
+      setOwnerUid(uid);
+      setAlarms(cached);
+      if (cached.length > 0) {
+        setIsLoadingAlarms(false);
+      }
     }
+
+    // Fase 2: sync con la nube en segundo plano, actualizar silenciosamente
+    const loaded = await loadUserAlarms(uid);
+    if (requestId !== latestLoadRequestRef.current) return;
 
     setOwnerUid(uid);
     setAlarms(loaded);
     setIsLoadingAlarms(false);
   };
 
+  const loadDietStatus = async () => {
+    const sessionUser = await getCurrentSessionUser();
+    const uid = sessionUser?.uid ?? "guest";
+    const profile = await getExistingUserDietProfile(uid);
+    const completed = isDietProfileComplete(profile);
+
+    const insights = completed ? buildDietInsights(profile) : null;
+
+    if (completed && insights) {
+      const tracking = await loadTodayDietTracking(uid, insights.recommendedCalories);
+      const recentHistory = await loadRecentDietHistory(uid, insights.recommendedCalories, 7);
+      setDietTodayLog(tracking.today);
+      setDietRecentHistory(recentHistory);
+      setDietStreak(tracking.streak);
+      setCaloriesConsumedText(String(tracking.today.caloriesConsumed));
+      setMealsCountText(String(tracking.today.mealsCount));
+    } else {
+      setDietTodayLog(null);
+      setDietRecentHistory([]);
+      setDietStreak({ currentStreak: 0, bestStreak: 0, completedDays: 0 });
+      setCaloriesConsumedText("0");
+      setMealsCountText("0");
+    }
+
+    setDietProfile(completed ? profile : null);
+    setDietSetupCompleted(completed);
+    setIsLoadingDietStatus(false);
+  };
+
   useFocusEffect(
     useCallback(() => {
       void loadAlarms();
+      void loadDietStatus();
     }, [])
   );
 
@@ -168,253 +260,310 @@ export default function HomeScreen() {
 
   const getTotalAlarms = () => alarms.length;
   const getActiveAlarms = () => alarms.filter(a => a.enabled).length;
+  const dietInsights = buildDietInsights(dietProfile);
 
-  const handleUpdateDiet = (type: 'calories' | 'water' | 'meal', value: number) => {
-    setDietProgress(prev => {
-      const newProgress = { ...prev };
-      if (type === 'calories') {
-        newProgress.calories.consumed = Math.max(0, Math.min(newProgress.calories.target, value));
-      } else if (type === 'water') {
-        newProgress.water.consumed = Math.max(0, Math.min(newProgress.water.target, value));
-      } else if (type === 'meal') {
-        newProgress.meals.completed = Math.max(0, Math.min(newProgress.meals.total, value));
-      }
-      newProgress.lastUpdated = new Date().toLocaleDateString('es-ES');
-      return newProgress;
-    });
+  const handleSaveDietProgress = async () => {
+    if (!dietInsights) {
+      Alert.alert("Perfil incompleto", "Completa tu perfil de dieta antes de guardar progreso diario.");
+      return;
+    }
+
+    const sessionUser = await getCurrentSessionUser();
+    const uid = sessionUser?.uid ?? "guest";
+
+    const calories = Number(caloriesConsumedText.replace(",", "."));
+    const meals = Number(mealsCountText.replace(",", "."));
+
+    if (!Number.isFinite(calories) || calories < 0 || calories > dietInsights.recommendedCalories) {
+      Alert.alert(
+        "Calorías inválidas",
+        `Ingresa un valor entre 0 y ${dietInsights.recommendedCalories} kcal.`
+      );
+      return;
+    }
+
+    if (!Number.isFinite(meals) || meals < 0 || meals > 5) {
+      Alert.alert("Comidas inválidas", "Ingresa un valor entre 0 y 5 comidas.");
+      return;
+    }
+
+    setIsSavingDietProgress(true);
+    try {
+      const saved = await saveTodayDietTracking(
+        uid,
+        {
+          caloriesConsumed: Math.round(calories),
+          mealsCount: Math.round(meals),
+        },
+        dietInsights.recommendedCalories
+      );
+
+      setDietTodayLog(saved.today);
+      setDietStreak(saved.streak);
+      setCaloriesConsumedText(String(saved.today.caloriesConsumed));
+      setMealsCountText(String(saved.today.mealsCount));
+
+      const recentHistory = await loadRecentDietHistory(
+        uid,
+        dietInsights.recommendedCalories,
+        7
+      );
+      setDietRecentHistory(recentHistory);
+    } finally {
+      setIsSavingDietProgress(false);
+    }
   };
 
-  const getCaloriePercentage = () => dietProgress.calories.consumed / dietProgress.calories.target;
-  const getWaterPercentage = () => dietProgress.water.consumed / dietProgress.water.target;
-  const getMealsPercentage = () => dietProgress.meals.completed / dietProgress.meals.total;
+  const renderDietSummary = () => {
+    if (!dietProfile || !dietInsights) {
+      return renderOnboardingDiet();
+    }
 
-  const calorieData = {
-    labels: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
-    datasets: [{
-      data: [1800, 1950, 1650, 2100, 1750, 1900, dietProgress.calories.consumed],
-      color: (opacity = 1) => `rgba(255, 213, 79, ${opacity})`,
-      strokeWidth: 3
-    }]
-  };
+    const goalReachedToday = Boolean(dietTodayLog?.goalMet);
+    const mealCount = Object.keys(dietProfile.mealSchedule).length;
 
-  const progressData = {
-    labels: ["Calorías", "Agua", "Comidas"],
-    data: [getCaloriePercentage(), getWaterPercentage(), getMealsPercentage()]
-  };
-
-  const renderDietTab = () => (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.dietContent}>
-      {/* Header Dieta */}
-      <View style={styles.dietHeader}>
-        <View style={styles.dietHeaderTitle}>
-          <FontAwesome5 name="apple-alt" size={24} color={theme === 'dark' ? colors.accent : colors.text} />
-          <Text style={styles.dietHeaderText}>Mi Progreso Dietético</Text>
-        </View>
-        <Text style={styles.dietDate}>Actualizado: {dietProgress.lastUpdated}</Text>
-      </View>
-
-      {/* Tarjeta de Racha */}
-      <View style={styles.streakCard}>
-        <View style={styles.streakInfo}>
-          <View style={styles.streakIcon}>
-            <FontAwesome5 name="fire" size={24} color={theme === 'dark' ? colors.accent : colors.text} />
+    return (
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.dietContent}>
+        <View style={styles.dietHeroCard}>
+          <View style={styles.dietHeroBadge}>
+            <Ionicons name="checkmark-circle" size={18} color={colors.accent} />
+            <Text style={styles.dietHeroBadgeText}>Perfil completo</Text>
           </View>
+
+          <Text style={styles.dietHeroTitle}>Resumen de tu plan nutricional</Text>
+          <Text style={styles.dietHeroText}>
+            Tus recomendaciones se calcularon usando tu peso, altura y objetivo guardado en esta cuenta.
+          </Text>
+        </View>
+
+        <View style={styles.dietMetricsRow}>
+          <View style={styles.dietMetricCard}>
+            <Text style={styles.dietMetricLabel}>IMC</Text>
+            <Text style={styles.dietMetricValue}>{dietInsights.bmi.toFixed(1)}</Text>
+            <Text style={styles.dietMetricHint}>{dietInsights.bmiCategory}</Text>
+          </View>
+
+          <View style={styles.dietMetricCard}>
+            <Text style={styles.dietMetricLabel}>Objetivo</Text>
+            <Text style={styles.dietMetricValueSmall}>{dietInsights.goalLabel}</Text>
+            <Text style={styles.dietMetricHint}>{mealCount} horarios activos</Text>
+          </View>
+        </View>
+
+        <View style={styles.streakCard}>
+          <View style={styles.streakInfo}>
+            <View style={styles.streakIcon}>
+              <Ionicons name="flame" size={26} color={colors.accent} />
+            </View>
+            <View>
+              <Text style={styles.streakLabel}>Racha diaria</Text>
+              <Text style={styles.streakValue}>{dietStreak.currentStreak}</Text>
+            </View>
+          </View>
+
           <View>
-            <Text style={styles.streakLabel}>Racha Actual</Text>
-            <Text style={styles.streakValue}>{dietProgress.streak} días</Text>
+            <Text style={styles.streakLabel}>Mejor racha</Text>
+            <Text style={styles.streakValue}>{dietStreak.bestStreak}</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.editButton}>
-          <Feather name="edit-2" size={18} color="#FFF8E1" />
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Calorías recomendadas</Text>
+          <Text style={styles.caloriesValue}>{dietInsights.recommendedCalories} kcal</Text>
+          <Text style={styles.caloriesCaption}>Recomendación diaria estimada</Text>
+          <Text style={styles.caloriesDescription}>{dietInsights.recommendationText}</Text>
+
+          <View style={styles.caloriesBreakdownRow}>
+            <View style={styles.caloriesBreakdownCard}>
+              <Text style={styles.caloriesBreakdownLabel}>Mantenimiento</Text>
+              <Text style={styles.caloriesBreakdownValue}>{dietInsights.maintenanceCalories} kcal</Text>
+            </View>
+
+            <View style={styles.caloriesBreakdownCard}>
+              <Text style={styles.caloriesBreakdownLabel}>Objetivo actual</Text>
+              <Text style={styles.caloriesBreakdownValue}>{dietInsights.recommendedCalories} kcal</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Seguimiento de hoy</Text>
+          <Text style={styles.dailyStatusText}>
+            Meta del día: consumir {dietInsights.recommendedCalories} kcal y al menos 3 comidas.
+          </Text>
+
+          <View style={styles.dailyInputGroup}>
+            <Text style={styles.dailyInputLabel}>Calorías consumidas (0 - {dietInsights.recommendedCalories})</Text>
+            <View style={styles.dailyInputRow}>
+              <Ionicons name="flame-outline" size={18} color={colors.accent} />
+              <TextInput
+                value={caloriesConsumedText}
+                onChangeText={setCaloriesConsumedText}
+                keyboardType="number-pad"
+                style={styles.dailyInput}
+                placeholder="0"
+                placeholderTextColor={colors.textSecondary}
+              />
+              <Text style={styles.dailyInputSuffix}>kcal</Text>
+            </View>
+          </View>
+
+          <View style={styles.dailyInputGroup}>
+            <Text style={styles.dailyInputLabel}>Comidas realizadas (0 - 5)</Text>
+            <View style={styles.dailyInputRow}>
+              <Ionicons name="restaurant-outline" size={18} color={colors.accent} />
+              <TextInput
+                value={mealsCountText}
+                onChangeText={setMealsCountText}
+                keyboardType="number-pad"
+                style={styles.dailyInput}
+                placeholder="0"
+                placeholderTextColor={colors.textSecondary}
+              />
+              <Text style={styles.dailyInputSuffix}>comidas</Text>
+            </View>
+          </View>
+
+          <View style={[styles.dailyStatusBadge, goalReachedToday ? styles.dailyStatusBadgeSuccess : styles.dailyStatusBadgePending]}>
+            <Ionicons
+              name={goalReachedToday ? "checkmark-circle" : "time-outline"}
+              size={18}
+              color={goalReachedToday ? "#4CAF50" : colors.textSecondary}
+            />
+            <Text style={styles.dailyStatusBadgeText}>
+              {goalReachedToday
+                ? "Objetivo diario completado: se suma +1 a tu racha"
+                : "Aún no cumples la meta diaria"}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.dietEditButton, isSavingDietProgress && { opacity: 0.6 }]}
+            onPress={handleSaveDietProgress}
+            disabled={isSavingDietProgress}
+          >
+            <Text style={styles.dietEditButtonText}>Guardar progreso de hoy</Text>
+            <Feather name="save" size={16} color={colors.background} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Clasificación de peso</Text>
+          <View style={styles.dietDetailRow}>
+            <Text style={styles.dietDetailLabel}>Categoría IMC</Text>
+            <Text style={styles.dietDetailValue}>{dietInsights.bmiCategory}</Text>
+          </View>
+          <View style={styles.dietDetailRow}>
+            <Text style={styles.dietDetailLabel}>Peso actual</Text>
+            <Text style={styles.dietDetailValue}>{dietProfile.weightKg} kg</Text>
+          </View>
+          <View style={styles.dietDetailRow}>
+            <Text style={styles.dietDetailLabel}>Altura</Text>
+            <Text style={styles.dietDetailValue}>{dietProfile.heightCm} cm</Text>
+          </View>
+          <View style={styles.dietDetailRow}>
+            <Text style={styles.dietDetailLabel}>Edad</Text>
+            <Text style={styles.dietDetailValue}>{dietProfile.age} años</Text>
+          </View>
+          <View style={styles.dietDetailRow}>
+            <Text style={styles.dietDetailLabel}>Género</Text>
+            <Text style={styles.dietDetailValue}>{dietInsights.genderLabel}</Text>
+          </View>
+          <View style={styles.dietDetailRow}>
+            <Text style={styles.dietDetailLabel}>Rango de peso normal</Text>
+            <Text style={styles.dietDetailValue}>
+              {dietInsights.healthyMinWeight.toFixed(1)} - {dietInsights.healthyMaxWeight.toFixed(1)} kg
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Historial últimos 7 días</Text>
+          {dietRecentHistory.map((item) => (
+            <View key={item.dateKey} style={styles.historyRow}>
+              <View style={styles.historyDayCell}>
+                <Text style={styles.historyDayText}>{formatDateLabel(item.dateKey)}</Text>
+                {item.isToday && <Text style={styles.historyTodayText}>Hoy</Text>}
+              </View>
+
+              <View style={styles.historyMetricsCell}>
+                <Text style={styles.historyMetricText}>
+                  {item.caloriesConsumed}/{item.caloriesTarget} kcal
+                </Text>
+                <Text style={styles.historyMetricText}>{item.mealsCount}/5 comidas</Text>
+              </View>
+
+              <View style={[styles.historyStatusChip, item.goalMet ? styles.historyStatusChipDone : styles.historyStatusChipPending]}>
+                <Text style={styles.historyStatusChipText}>{item.goalMet ? "Cumplido" : "Pendiente"}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <TouchableOpacity
+          style={styles.dietEditButton}
+          onPress={() => router.push('/diet-setup' as never)}
+        >
+          <Text style={styles.dietEditButtonText}>Editar información de dieta</Text>
+          <Feather name="edit-2" size={16} color={colors.background} />
         </TouchableOpacity>
-      </View>
+      </ScrollView>
+    );
+  };
 
-      {/* Gráfico de Progreso Circular */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Progreso del Día</Text>
-        <View style={styles.progressChartContainer}>
-          <ProgressChart
-            data={progressData}
-            width={screenWidth - 80}
-            height={180}
-            strokeWidth={12}
-            radius={40}
-            chartConfig={{
-              backgroundColor: colors.surface,
-              backgroundGradientFrom: colors.surface,
-              backgroundGradientTo: colors.surface,
-              decimalPlaces: 0,
-              color: (opacity = 1, index) => {
-                const chartColors = [
-                  `rgba(255, 213, 79, ${opacity})`,
-                  `rgba(66, 165, 245, ${opacity})`,
-                  `rgba(102, 187, 106, ${opacity})`
-                ];
-                return chartColors[index ?? 0];
-              },
-              labelColor: () => colors.text,
-              style: {
-                borderRadius: 16
-              }
-            }}
-            hideLegend={false}
-            style={styles.progressChart}
-          />
-        </View>
-        <View style={styles.progressStats}>
-          <View style={styles.progressStat}>
-            <View style={[styles.statDot, { backgroundColor: theme === 'dark' ? colors.accent : colors.text }]} />
-            <Text style={styles.statLabel}>Calorías</Text>
-            <Text style={styles.statValue}>
-              {dietProgress.calories.consumed}/{dietProgress.calories.target} kcal
-            </Text>
+  const renderOnboardingDiet = () => (
+    <View style={styles.onboardingContainer}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center', width: '100%' }}>
+        <View style={styles.onboardingContent}>
+          {/* Logo */}
+          <View style={styles.onboardingLogo}>
+            <FontAwesome5 name="apple-alt" size={60} color={colors.background} />
           </View>
-          <View style={styles.progressStat}>
-            <View style={[styles.statDot, { backgroundColor: "#42A5F5" }]} />
-            <Text style={styles.statLabel}>Agua</Text>
-            <Text style={styles.statValue}>
-              {dietProgress.water.consumed}/{dietProgress.water.target} ml
-            </Text>
-          </View>
-          <View style={styles.progressStat}>
-            <View style={[styles.statDot, { backgroundColor: "#66BB6A" }]} />
-            <Text style={styles.statLabel}>Comidas</Text>
-            <Text style={styles.statValue}>
-              {dietProgress.meals.completed}/{dietProgress.meals.total}
-            </Text>
-          </View>
-        </View>
-      </View>
 
-      {/* Controles Rápidos */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Actualizar Progreso</Text>
-        <View style={styles.quickControls}>
-          <View style={styles.quickControl}>
-            <Text style={styles.controlLabel}>Calorías</Text>
-            <View style={styles.controlButtons}>
-              <TouchableOpacity 
-                style={styles.controlButton}
-                onPress={() => handleUpdateDiet('calories', dietProgress.calories.consumed - 100)}
-              >
-                <Text style={styles.controlButtonText}>-100</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.controlButton}
-                onPress={() => handleUpdateDiet('calories', dietProgress.calories.consumed + 100)}
-              >
-                <Text style={styles.controlButtonText}>+100</Text>
-              </TouchableOpacity>
-            </View>
+          {/* Título */}
+          <Text style={styles.onboardingTitle}>NutriPlan</Text>
+          <Text style={styles.onboardingSubtitle}>
+            Tu asistente personal para una vida más saludable
+          </Text>
+
+          {/* Caja de bienvenida */}
+          <View style={styles.onboardingBox}>
+            <Text style={styles.onboardingBoxGreeting}>¡Hola!</Text>
+            <Text style={styles.onboardingBoxText}>
+              Vamos a crear un plan nutricional personalizado según tus objetivos y preferencias.
+            </Text>
           </View>
-          
-          <View style={styles.quickControl}>
-            <Text style={styles.controlLabel}>Agua (ml)</Text>
-            <View style={styles.controlButtons}>
-              <TouchableOpacity 
-                style={styles.controlButton}
-                onPress={() => handleUpdateDiet('water', dietProgress.water.consumed - 250)}
-              >
-                <Text style={styles.controlButtonText}>-250</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.controlButton}
-                onPress={() => handleUpdateDiet('water', dietProgress.water.consumed + 250)}
-              >
-                <Text style={styles.controlButtonText}>+250</Text>
-              </TouchableOpacity>
+
+          {/* Botón Comenzar */}
+          <TouchableOpacity 
+            style={styles.onboardingStartButton}
+            onPress={() => router.push('/diet-setup' as never)}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={styles.onboardingStartButtonText}>{dietSetupCompleted ? 'Editar plan' : 'Comenzar'}</Text>
+              <Feather name="arrow-right" size={16} color={colors.background} />
             </View>
-          </View>
-          
-          <View style={styles.quickControl}>
-            <Text style={styles.controlLabel}>Comidas</Text>
-            <View style={styles.controlButtons}>
-              <TouchableOpacity 
-                style={styles.controlButton}
-                onPress={() => handleUpdateDiet('meal', dietProgress.meals.completed - 1)}
-              >
-                <Text style={styles.controlButtonText}>-1</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.controlButton}
-                onPress={() => handleUpdateDiet('meal', dietProgress.meals.completed + 1)}
-              >
-                <Text style={styles.controlButtonText}>+1</Text>
-              </TouchableOpacity>
+          </TouchableOpacity>
+
+          {/* Opciones */}
+          <View style={styles.onboardingOptions}>
+            <View style={styles.onboardingOption}>
+              <View style={styles.onboardingOptionIcon}>
+                <FontAwesome5 name="weight" size={20} color={colors.accent} />
+              </View>
+              <Text style={styles.onboardingOptionLabel}>Control de{'\n'}peso</Text>
+            </View>
+            
+            <View style={styles.onboardingOption}>
+              <View style={styles.onboardingOptionIcon}>
+                <Ionicons name="time" size={20} color={colors.accent} />
+              </View>
+              <Text style={styles.onboardingOptionLabel}>Planificación{'\n'}de horarios</Text>
             </View>
           </View>
         </View>
-        
-        <TouchableOpacity style={styles.detailButton}>
-          <Text style={styles.detailButtonText}>Ver Detalles Completos</Text>
-          <Ionicons name="arrow-forward" size={18} color={theme === 'dark' ? colors.accent : colors.text} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Gráfico de Línea - Semanal */}
-      <View style={styles.sectionCard}>
-        <View style={styles.chartHeader}>
-          <Text style={styles.sectionTitle}>Calorías Consumidas</Text>
-          <Text style={styles.chartSubtitle}>Últimos 7 días</Text>
-        </View>
-        <LineChart
-          data={calorieData}
-          width={screenWidth - 80}
-          height={200}
-          chartConfig={{
-            backgroundColor: colors.surface,
-            backgroundGradientFrom: colors.surface,
-            backgroundGradientTo: colors.surface,
-            decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(255, 213, 79, ${opacity})`,
-            labelColor: () => colors.text,
-            style: {
-              borderRadius: 16
-            },
-            propsForDots: {
-              r: "6",
-              strokeWidth: "2",
-              stroke: colors.surface
-            },
-            propsForBackgroundLines: {
-              strokeDasharray: "",
-              stroke: colors.border,
-              strokeWidth: 1
-            }
-          }}
-          bezier
-          style={styles.lineChart}
-          withInnerLines={true}
-          withOuterLines={false}
-          withVerticalLines={true}
-          withHorizontalLines={true}
-          fromZero={false}
-        />
-        <View style={styles.chartStats}>
-          <Text style={styles.chartStat}>
-            <Text style={styles.chartStatLabel}>Promedio: </Text>
-            <Text style={styles.chartStatValue}>1850 kcal</Text>
-          </Text>
-          <Text style={styles.chartStat}>
-            <Text style={styles.chartStatLabel}>Objetivo: </Text>
-            <Text style={styles.chartStatValue}>{dietProgress.calories.target} kcal</Text>
-          </Text>
-        </View>
-      </View>
-
-      {/* Tip Card */}
-      <View style={styles.tipCard}>
-        <View style={styles.tipIcon}>
-          <Ionicons name="bulb-outline" size={24} color={theme === 'dark' ? colors.accent : colors.text} />
-        </View>
-        <View style={styles.tipContent}>
-          <Text style={styles.tipTitle}>Consejo del Día</Text>
-          <Text style={styles.tipText}>
-            Bebe un vaso de agua 30 minutos antes de cada comida para mejorar la digestión y controlar el apetito.
-          </Text>
-        </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 
   return (
@@ -427,18 +576,22 @@ export default function HomeScreen() {
         
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>
-            {activeTab === 'alarms' ? 'Mis Alarmas' : 'Mi Progreso'}
+            {activeTab === 'alarms' ? 'Mis Alarmas' : 'Mi Plan de Dieta'}
           </Text>
           <Text style={styles.stepIndicator}>
-            {activeTab === 'alarms' ? `${getTotalAlarms()} alarmas` : 'Hoy'}
+            {activeTab === 'alarms'
+              ? `${getTotalAlarms()} alarmas`
+              : dietSetupCompleted
+                ? 'Perfil completo'
+                : 'Setup inicial'}
           </Text>
         </View>
         
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => activeTab === 'alarms' ? router.push("/(tabs)/newAlarm") : null}
+          onPress={() => activeTab === 'alarms' ? router.push("/(tabs)/newAlarm") : router.push('/diet-setup' as never)}
         >
-          <Ionicons name={activeTab === 'alarms' ? "add-circle" : "refresh"} size={32} color={colors.accent} />
+          <Ionicons name={activeTab === 'alarms' ? "add-circle" : "arrow-forward-circle"} size={32} color={colors.accent} />
         </TouchableOpacity>
       </View>
 
@@ -476,7 +629,7 @@ export default function HomeScreen() {
       {/* Contenido basado en la pestaña activa */}
       {activeTab === 'alarms' ? (
         <>
-          {isLoadingAlarms ? (
+          {isLoadingAlarms && alarms.length === 0 ? (
             <View style={styles.emptyState}>
               <ActivityIndicator size="large" color={colors.accent} />
               <Text style={styles.emptyStateText}>Cargando alarmas...</Text>
@@ -614,7 +767,12 @@ export default function HomeScreen() {
           )}
         </>
       ) : (
-        renderDietTab()
+        isLoadingDietStatus ? (
+          <View style={styles.emptyState}>
+            <ActivityIndicator size="large" color={colors.accent} />
+            <Text style={styles.emptyStateText}>Cargando tu perfil de dieta...</Text>
+          </View>
+        ) : dietSetupCompleted ? renderDietSummary() : renderOnboardingDiet()
       )}
     </View>
   );

@@ -3,7 +3,7 @@ import { useTheme } from "@/hooks/theme-context";
 import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal, Alert, ActivityIndicator } from "react-native";
 import { useCallback, useEffect, useState } from "react";
 import * as DocumentPicker from "expo-document-picker";
-import { CustomSound, deleteCustomSound, readLocalSounds, syncSoundsFromCloud, uploadCustomSound } from "@/services/user-sounds";
+import { CustomSound, deleteCustomSound, readLocalSounds, uploadCustomSound } from "@/services/user-sounds";
 
 interface SoundPickerProps {
   visible: boolean;
@@ -34,9 +34,6 @@ export function SoundPicker({ visible, currentSound, uid, onSelect, onClose }: S
   const loadSounds = useCallback(async () => {
     setIsSyncing(true);
     try {
-      if (uid !== "guest") {
-        await syncSoundsFromCloud(uid);
-      }
       const sounds = await readLocalSounds(uid);
       setCustomSounds(sounds);
     } catch (error) {
@@ -225,9 +222,7 @@ export function SoundPicker({ visible, currentSound, uid, onSelect, onClose }: S
                   {isUploading ? 'Subiendo...' : 'Seleccionar Archivo de Audio'}
                 </Text>
                 <Text style={[styles.uploadDesc, { color: colors.textSecondary }]}>
-                  {uid === "guest"
-                    ? "Archivo local (inicia sesión para sincronizar)"
-                    : "Se guarda en la nube para todos tus dispositivos"}
+                  Se guarda localmente en este dispositivo
                 </Text>
               </View>
             </TouchableOpacity>

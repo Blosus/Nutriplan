@@ -208,6 +208,14 @@ export async function saveUserAlarms(uid: string, alarms: Alarm[]): Promise<Alar
   return normalized;
 }
 
+/**
+ * Devuelve las alarmas guardadas localmente sin hacer sync con la nube.
+ * Útil para mostrar datos inmediatamente mientras el sync ocurre en segundo plano.
+ */
+export async function readCachedAlarms(uid: string): Promise<Alarm[]> {
+  return readLocalAlarms(uid);
+}
+
 export async function deleteUserAlarm(uid: string, alarmId: number): Promise<void> {
   const local = await readLocalAlarms(uid);
   const next = local.filter((alarm) => alarm.id !== alarmId);
