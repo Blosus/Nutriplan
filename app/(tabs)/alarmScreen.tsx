@@ -1,11 +1,13 @@
 import { useTheme } from '@/hooks/theme-context';
 import { Alarm, loadUserAlarms, saveUserAlarms } from '@/services/alarms';
+import AudioManager from '@/services/audio';
+import VibrationManager, { VibrationType } from '@/services/vibration';
 import { getCurrentSessionUser } from '@/services/session';
-import { Audio } from 'expo-av';
+import { ensureUserSettingsInitialized } from '@/services/user-settings';
 import * as Notifications from 'expo-notifications';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Alert, Text, TouchableOpacity, Vibration, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Text, TouchableOpacity, View } from 'react-native';
 
 // Importamos los estilos separados
 import { getAlarmScreenStyles } from '../styles/alarmScreen.styles';
@@ -19,80 +21,80 @@ export default function AlarmScreen() {
 
   const [alarm, setAlarm] = useState<Alarm | null>(null);
   const [ownerUid, setOwnerUid] = useState('guest');
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [vibracionEnabled, setVibracionEnabled] = useState(false);
+  const [vibrationPattern, setVibrationPattern] = useState<VibrationType>('NORMAL');
+  const [soundName, setSoundName] = useState('sonidolol.mp3');
 
   useEffect(() => {
     const load = async () => {
       if (!idParam) return;
-      const sessionUser = await getCurrentSessionUser();
-      const uid = sessionUser?.uid ?? 'guest';
-      setOwnerUid(uid);
+      
+      try {
+        const sessionUser = await getCurrentSessionUser();
+        const uid = sessionUser?.uid ?? 'guest';
+        setOwnerUid(uid);
 
-      const list = await loadUserAlarms(uid);
-      const found = list.find(a => String(a.id) === String(idParam));
-      if (found) setAlarm(found);
+        // Cargar la alarma
+        const list = await loadUserAlarms(uid);
+        const found = list.find(a => String(a.id) === String(idParam));
+        if (found) setAlarm(found);
+
+        // Cargar configuraciones de sonido y vibración
+        const settings = await ensureUserSettingsInitialized(uid);
+        setSoundEnabled(settings.soundEnabled);
+        setVibracionEnabled(settings.vibracionEnabled);
+        setVibrationPattern(settings.vibrationPattern);
+        setSoundName(settings.soundName);
+      } catch (error) {
+        console.error('Error loading alarm and settings:', error);
+      }
     };
 
     load();
   }, [idParam]);
 
   useEffect(() => {
-    let vibrateOn = true;
+    const startAlarm = async () => {
+      // Iniciar vibración si está habilitada
+      if (vibracionEnabled) {
+        VibrationManager.startVibration(vibrationPattern);
+      }
 
-    const startVibration = () => {
-      // patrón: pausa, vibrar, pausa corta, vibrar
-      Vibration.vibrate([0, 700, 200, 700], true);
-    };
-
-    const stopVibration = () => {
-      Vibration.cancel();
-      vibrateOn = false;
-    };
-
-    const startSound = async () => {
-      try {
-        const { sound } = await Audio.Sound.createAsync(
-          // Usa un sonido por defecto embebido en la app si existe, sino reproducir silencio
-          require('../../assets/alarm_sound.mp3'),
-          { isLooping: true, volume: 1.0 }
-        );
-        soundRef.current = sound;
-        await sound.playAsync();
-      } catch (e) {
-        // no hay asset, intentar reproducir el sonido por notificación solo
-        console.log('Error playing sound:', e);
+      // Iniciar sonido si está habilitado
+      if (soundEnabled) {
+        await AudioManager.startAlarmSound(soundEnabled);
       }
     };
 
-    startVibration();
-    startSound();
+    const cleanup = async () => {
+      VibrationManager.stopVibration();
+      await AudioManager.stopAlarmSound();
+    };
+
+    startAlarm();
 
     return () => {
-      stopVibration();
-      stopSound();
+      cleanup();
     };
-  }, []);
+  }, [soundEnabled, vibracionEnabled, vibrationPattern]);
 
   const stopSound = async () => {
     try {
-      if (soundRef.current) {
-        await soundRef.current.stopAsync();
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
-    } catch (e) {}
+      VibrationManager.stopVibration();
+      await AudioManager.stopAlarmSound();
+    } catch (e) {
+      console.error('Error stopping alarm:', e);
+    }
   };
 
   const dismiss = async () => {
-    // solo detener sonido/vibración y volver
-    try { Vibration.cancel(); } catch (e) {}
     try {
-      if (soundRef.current) {
-        await soundRef.current.stopAsync();
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
-    } catch (e) {}
+      VibrationManager.stopVibration();
+      await AudioManager.stopAlarmSound();
+    } catch (e) {
+      console.error('Error during dismiss:', e);
+    }
     router.back();
   };
 

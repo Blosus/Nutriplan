@@ -4,8 +4,8 @@ import { getCurrentSessionUser } from "@/services/session";
 import { Feather, FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { router, useFocusEffect } from "expo-router";
-import { useEffect, useState } from "react";
-import { Alert, FlatList, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
 import { LineChart, ProgressChart } from "react-native-chart-kit";
 import { getIndexStyles, screenWidth } from '../styles/index.styles';
 
@@ -31,7 +31,9 @@ export default function HomeScreen() {
   const styles = getIndexStyles(colors);
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [ownerUid, setOwnerUid] = useState("guest");
+  const [isLoadingAlarms, setIsLoadingAlarms] = useState(true);
   const [activeTab, setActiveTab] = useState<'alarms' | 'diet'>('alarms');
+  const latestLoadRequestRef = useRef(0);
   const [dietProgress, setDietProgress] = useState<DietProgress>({
     calories: {
       target: 2000,
@@ -50,17 +52,29 @@ export default function HomeScreen() {
   });
 
   const loadAlarms = async () => {
+    const requestId = latestLoadRequestRef.current + 1;
+    latestLoadRequestRef.current = requestId;
+
+    setIsLoadingAlarms(true);
+
     const sessionUser = await getCurrentSessionUser();
     const uid = sessionUser?.uid ?? "guest";
-    setOwnerUid(uid);
-
     const loaded = await loadUserAlarms(uid);
+
+    if (requestId !== latestLoadRequestRef.current) {
+      return;
+    }
+
+    setOwnerUid(uid);
     setAlarms(loaded);
+    setIsLoadingAlarms(false);
   };
 
-  useFocusEffect(() => {
-    loadAlarms();
-  });
+  useFocusEffect(
+    useCallback(() => {
+      void loadAlarms();
+    }, [])
+  );
 
   useEffect(() => {
     Notifications.setNotificationHandler({
@@ -462,6 +476,13 @@ export default function HomeScreen() {
       {/* Contenido basado en la pestaña activa */}
       {activeTab === 'alarms' ? (
         <>
+          {isLoadingAlarms ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator size="large" color={colors.accent} />
+              <Text style={styles.emptyStateText}>Cargando alarmas...</Text>
+            </View>
+          ) : (
+            <>
           {/* Resumen de Alarmas */}
           <View style={styles.summaryContainer}>
             <View style={styles.summaryItem}>
@@ -588,6 +609,8 @@ export default function HomeScreen() {
                 </View>
               )}
             />
+          )}
+            </>
           )}
         </>
       ) : (

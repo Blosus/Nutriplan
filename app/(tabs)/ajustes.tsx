@@ -5,12 +5,16 @@ import {
   DEFAULT_USER_SETTINGS,
   ensureUserSettingsInitialized,
   saveUserSettings,
+  VibrationType,
 } from "@/services/user-settings";
+import VibrationManager from "@/services/vibration";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
 import { Alert } from "react-native";
+import VibrationPicker from "@/components/vibration-picker";
+import SoundPicker from "@/components/sound-picker";
 
 const displayFont = Platform.select({
   ios: 'Avenir Next',
@@ -29,8 +33,14 @@ export default function AjustesScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(DEFAULT_USER_SETTINGS.notificationsEnabled);
   const [soundEnabled, setSoundEnabled] = useState(DEFAULT_USER_SETTINGS.soundEnabled);
   const [vibracionEnabled, setVibracionEnabled] = useState(DEFAULT_USER_SETTINGS.vibracionEnabled);
+  const [vibrationPattern, setVibrationPattern] = useState<VibrationType>(DEFAULT_USER_SETTINGS.vibrationPattern);
+  const [soundName, setSoundName] = useState(DEFAULT_USER_SETTINGS.soundName);
   const [settingsOwnerId, setSettingsOwnerId] = useState("guest");
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
+  
+  // Modal states
+  const [vibrationPickerVisible, setVibrationPickerVisible] = useState(false);
+  const [soundPickerVisible, setSoundPickerVisible] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -43,6 +53,8 @@ export default function AjustesScreen() {
         setNotificationsEnabled(settings.notificationsEnabled);
         setSoundEnabled(settings.soundEnabled);
         setVibracionEnabled(settings.vibracionEnabled);
+        setVibrationPattern(settings.vibrationPattern);
+        setSoundName(settings.soundName);
       } catch (error) {
         console.error("Error loading user settings:", error);
       } finally {
@@ -64,6 +76,9 @@ export default function AjustesScreen() {
           notificationsEnabled,
           soundEnabled,
           vibracionEnabled,
+          vibrationPattern,
+          soundName,
+          theme,
         });
       } catch (error) {
         console.error("Error saving user settings:", error);
@@ -71,7 +86,7 @@ export default function AjustesScreen() {
     };
 
     void saveSettings();
-  }, [notificationsEnabled, soundEnabled, vibracionEnabled, isSettingsLoaded, settingsOwnerId]);
+  }, [notificationsEnabled, soundEnabled, vibracionEnabled, vibrationPattern, soundName, isSettingsLoaded, settingsOwnerId]);
 
   const handleThemeToggle = async (value: boolean) => {
     if (value !== (theme === "dark")) {
@@ -120,7 +135,12 @@ export default function AjustesScreen() {
           <View style={[styles.settingItem, { backgroundColor: colors.surface }]}>
             <View style={styles.settingInfo}>
               <Ionicons name="notifications-outline" size={20} color={colors.accent} />
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Notificaciones</Text>
+              <View style={styles.settingLabelContainer}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Notificaciones</Text>
+                <Text style={[styles.settingHint, { color: colors.textSecondary }]}>
+                  {notificationsEnabled ? 'Habilitadas' : 'Deshabilitadas'}
+                </Text>
+              </View>
             </View>
             <Switch
               value={notificationsEnabled}
@@ -130,33 +150,63 @@ export default function AjustesScreen() {
             />
           </View>
 
-          <View style={[styles.settingItem, { backgroundColor: colors.surface }]}>
+          <TouchableOpacity
+            style={[styles.settingItem, { backgroundColor: colors.surface }, !notificationsEnabled && styles.disabledItem]}
+            onPress={() => setSoundPickerVisible(true)}
+            disabled={!notificationsEnabled}
+            activeOpacity={notificationsEnabled ? 0.7 : 1}
+          >
             <View style={styles.settingInfo}>
               <Ionicons name="volume-high-outline" size={20} color={colors.accent} />
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Sonido</Text>
+              <View style={styles.settingLabelContainer}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Sonido</Text>
+                <Text style={[styles.settingHint, { color: colors.textSecondary }]}>
+                  {soundEnabled ? `Actual: ${soundName}` : 'Deshabilitado'}
+                </Text>
+              </View>
             </View>
-            <Switch
-              value={soundEnabled}
-              onValueChange={setSoundEnabled}
-              trackColor={{ false: colors.border, true: colors.accent + "50" }}
-              thumbColor={soundEnabled ? colors.accent : colors.textSecondary}
-              disabled={!notificationsEnabled}
-            />
-          </View>
+            <View style={styles.settingControl}>
+              <Switch
+                value={soundEnabled}
+                onValueChange={setSoundEnabled}
+                trackColor={{ false: colors.border, true: colors.accent + "50" }}
+                thumbColor={soundEnabled ? colors.accent : colors.textSecondary}
+                disabled={!notificationsEnabled}
+              />
+              {soundEnabled && notificationsEnabled && (
+                <Ionicons name="chevron-forward" size={20} color={colors.accent} />
+              )}
+            </View>
+          </TouchableOpacity>
 
-          <View style={[styles.settingItem, styles.settingItemLast, { backgroundColor: colors.surface }]}>
+          <TouchableOpacity
+            style={[styles.settingItem, styles.settingItemLast, { backgroundColor: colors.surface }, !notificationsEnabled && styles.disabledItem]}
+            onPress={() => setVibrationPickerVisible(true)}
+            disabled={!notificationsEnabled}
+            activeOpacity={notificationsEnabled ? 0.7 : 1}
+          >
             <View style={styles.settingInfo}>
               <Ionicons name="phone-portrait-outline" size={20} color={colors.accent} />
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Vibración</Text>
+              <View style={styles.settingLabelContainer}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Vibración</Text>
+                <Text style={[styles.settingHint, { color: colors.textSecondary }]}>
+                  {vibracionEnabled ? `Patrón: ${vibrationPattern}` : 'Deshabilitado'}
+                </Text>
+              </View>
             </View>
-            <Switch
-              value={vibracionEnabled}
-              onValueChange={setVibracionEnabled}
-              trackColor={{ false: colors.border, true: colors.accent + "50" }}
-              thumbColor={vibracionEnabled ? colors.accent : colors.textSecondary}
-              disabled={!notificationsEnabled}
-            />
-          </View>
+            <View style={styles.settingControl}>
+              <Switch
+                value={vibracionEnabled}
+                onValueChange={setVibracionEnabled}
+                trackColor={{ false: colors.border, true: colors.accent + "50" }}
+                thumbColor={vibracionEnabled ? colors.accent : colors.textSecondary}
+                disabled={!notificationsEnabled}
+              />
+              {vibracionEnabled && notificationsEnabled && (
+                <Ionicons name="chevron-forward" size={20} color={colors.accent} />
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Apariencia */}
@@ -203,6 +253,23 @@ export default function AjustesScreen() {
         </View>
 
       </ScrollView>
+
+      {/* Modales */}
+      <VibrationPicker
+        visible={vibrationPickerVisible}
+        currentPattern={vibrationPattern}
+        onSelect={setVibrationPattern}
+        onClose={() => setVibrationPickerVisible(false)}
+      />
+
+      <SoundPicker
+        visible={soundPickerVisible}
+        currentSound={soundName}
+        onSelect={(name, soundUri) => {
+          setSoundName(name);
+        }}
+        onClose={() => setSoundPickerVisible(false)}
+      />
     </View>
   );
 }
@@ -288,10 +355,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+  settingControl: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  disabledItem: {
+    opacity: 0.6,
+  },
+  settingLabelContainer: {
+    flexDirection: "column",
+    gap: 4,
+  },
   settingLabel: {
     color: "#FFF8E1",
     fontSize: 16,
     fontWeight: "500",
+    fontFamily: textFont,
+  },
+  settingHint: {
+    color: "#A0A0A0",
+    fontSize: 12,
+    fontWeight: "400",
     fontFamily: textFont,
   },
   infoItem: {

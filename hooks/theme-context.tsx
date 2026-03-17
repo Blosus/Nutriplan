@@ -1,7 +1,13 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { auth } from "@/services/firebase";
+import {
+  ensureUserSettingsInitialized,
+  saveUserThemePreference,
+  type AppThemePreference,
+} from "@/services/user-settings";
+import { onAuthStateChanged } from "firebase/auth";
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
-export type ThemeType = "dark" | "light";
+export type ThemeType = AppThemePreference;
 
 export interface Theme {
   background: string;
@@ -47,27 +53,36 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadTheme();
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      try {
+        if (!firebaseUser) {
+          setTheme("dark");
+          return;
+        }
 
-  const loadTheme = async () => {
-    try {
-      const savedTheme = (await AsyncStorage.getItem("@theme")) as ThemeType | null;
-      if (savedTheme && (savedTheme === "dark" || savedTheme === "light")) {
-        setTheme(savedTheme);
+        const settings = await ensureUserSettingsInitialized(firebaseUser.uid);
+        setTheme(settings.theme);
+      } catch (error) {
+        console.error("Error loading theme:", error);
+        setTheme("dark");
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error loading theme:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    });
+
+    return unsubscribe;
+  }, []);
 
   const toggleTheme = async () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
+
+    if (!auth.currentUser) {
+      return;
+    }
+
     try {
-      await AsyncStorage.setItem("@theme", newTheme);
+      await saveUserThemePreference(auth.currentUser.uid, newTheme);
     } catch (error) {
       console.error("Error saving theme:", error);
     }

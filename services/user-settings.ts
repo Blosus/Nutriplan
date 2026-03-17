@@ -2,16 +2,27 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
+export type AppThemePreference = 'dark' | 'light';
+export type VibrationType = 'GENTLE' | 'NORMAL' | 'STRONG' | 'PULSE' | 'WAVE';
+
 export type UserSettings = {
   notificationsEnabled: boolean;
   soundEnabled: boolean;
   vibracionEnabled: boolean;
+  vibrationPattern: VibrationType;
+  soundName: string;
+  soundUri: string | null; // null = usar sonido embebido por defecto
+  theme: AppThemePreference;
 };
 
 export const DEFAULT_USER_SETTINGS: UserSettings = {
   notificationsEnabled: true,
   soundEnabled: true,
   vibracionEnabled: true,
+  vibrationPattern: 'NORMAL',
+  soundName: 'sonidolol.mp3',
+  soundUri: null,
+  theme: 'dark',
 };
 
 const SETTINGS_STORAGE_KEY_PREFIX = "@user_settings";
@@ -41,6 +52,10 @@ const normalizeSettings = (input?: Partial<UserSettings> | null): UserSettings =
       input?.notificationsEnabled ?? DEFAULT_USER_SETTINGS.notificationsEnabled,
     soundEnabled: input?.soundEnabled ?? DEFAULT_USER_SETTINGS.soundEnabled,
     vibracionEnabled: input?.vibracionEnabled ?? DEFAULT_USER_SETTINGS.vibracionEnabled,
+    vibrationPattern: input?.vibrationPattern ?? DEFAULT_USER_SETTINGS.vibrationPattern,
+    soundName: input?.soundName ?? DEFAULT_USER_SETTINGS.soundName,
+    soundUri: input?.soundUri ?? DEFAULT_USER_SETTINGS.soundUri,
+    theme: input?.theme ?? DEFAULT_USER_SETTINGS.theme,
   };
 };
 
@@ -152,4 +167,16 @@ export async function saveUserSettings(
   }
 
   return normalized;
+}
+
+export async function saveUserThemePreference(
+  uid: string,
+  theme: AppThemePreference
+): Promise<UserSettings> {
+  const currentSettings = await ensureUserSettingsInitialized(uid);
+
+  return saveUserSettings(uid, {
+    ...currentSettings,
+    theme,
+  });
 }

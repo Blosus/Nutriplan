@@ -3,21 +3,19 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { ThemeProvider } from '@/hooks/theme-context';
+import { ThemeProvider, useTheme } from '@/hooks/theme-context';
 
 export const unstable_settings = {
   initialRouteName: 'Login',
   anchor: '(tabs)',
 };
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+function RootNavigator() {
+  const { theme } = useTheme();
 
   return (
-    <ThemeProvider>
-      <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
+    <NavigationThemeProvider value={theme === 'dark' ? DarkTheme : DefaultTheme}>
+      <Stack>
         <Stack.Screen name="Login" options={{ headerShown: false }} />
         <Stack.Screen name="registro" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -25,6 +23,13 @@ export default function RootLayout() {
       </Stack>
       <StatusBar style="auto" />
     </NavigationThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootNavigator />
     </ThemeProvider>
   );
 }
