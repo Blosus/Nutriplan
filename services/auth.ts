@@ -1,5 +1,6 @@
 import { auth } from './firebase';
 import { ensureUserProfile } from './user-profile';
+import { ensureUserSettingsInitialized } from './user-settings';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -77,6 +78,7 @@ export const signInNutriApp = async (
 
     const user = mapFirebaseUser(credential.user);
     await ensureUserProfile(user);
+    await ensureUserSettingsInitialized(user.uid);
 
     return user;
   } catch (error) {
@@ -104,6 +106,7 @@ export const registerNutriApp = async (
 
     const user = mapFirebaseUser(credential.user);
     await ensureUserProfile(user);
+    await ensureUserSettingsInitialized(user.uid);
 
     return user;
   } catch (error) {

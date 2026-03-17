@@ -1,7 +1,11 @@
 import { useTheme } from "@/hooks/theme-context";
 import { signOutNutriApp } from "@/services/auth";
 import { clearCurrentSessionUser, getCurrentSessionUser } from "@/services/session";
-import { DEFAULT_USER_SETTINGS, loadUserSettings, saveUserSettings } from "@/services/user-settings";
+import {
+  DEFAULT_USER_SETTINGS,
+  ensureUserSettingsInitialized,
+  saveUserSettings,
+} from "@/services/user-settings";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -35,7 +39,7 @@ export default function AjustesScreen() {
         const ownerUid = currentUser?.uid ?? "guest";
         setSettingsOwnerId(ownerUid);
 
-        const settings = await loadUserSettings(ownerUid);
+        const settings = await ensureUserSettingsInitialized(ownerUid);
         setNotificationsEnabled(settings.notificationsEnabled);
         setSoundEnabled(settings.soundEnabled);
         setVibracionEnabled(settings.vibracionEnabled);

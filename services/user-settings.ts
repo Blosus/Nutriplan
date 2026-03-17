@@ -18,7 +18,6 @@ const SETTINGS_STORAGE_KEY_PREFIX = "@user_settings";
 const USERS_COLLECTION = "users";
 const SETTINGS_SUBCOLLECTION = "settings";
 const SETTINGS_DOC_ID = "preferences";
-const LEGACY_SETTINGS_COLLECTION = "userSettings";
 
 async function canUseCloud(uid: string): Promise<boolean> {
   if (uid === "guest") {
@@ -86,26 +85,7 @@ async function readCloudSettings(uid: string): Promise<UserSettings | null> {
       return normalizeSettings(snapshot.data() as Partial<UserSettings>);
     }
 
-    // Fallback para esquema legado: userSettings/<uid>
-    const legacyRef = doc(db, LEGACY_SETTINGS_COLLECTION, uid);
-    const legacySnapshot = await getDoc(legacyRef);
-    if (!legacySnapshot.exists()) {
-      return null;
-    }
-
-    const legacyData = normalizeSettings(legacySnapshot.data() as Partial<UserSettings>);
-
-    // Migra en caliente al nuevo esquema al primer acceso.
-    await setDoc(
-      settingsRef,
-      {
-        ...legacyData,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
-
-    return legacyData;
+    return null;
   } catch (error) {
     console.error("Error reading cloud user settings:", error);
     return null;
@@ -134,11 +114,13 @@ async function writeCloudSettings(uid: string, settings: UserSettings): Promise<
   }
 }
 
-export async function loadUserSettings(uid: string): Promise<UserSettings> {
+export async function ensureUserSettingsInitialized(uid: string): Promise<UserSettings> {
   const localSettings = await readLocalSettings(uid);
 
   if (!(await canUseCloud(uid))) {
-    return localSettings ?? normalizeSettings(DEFAULT_USER_SETTINGS);
+    const fallback = localSettings ?? normalizeSettings(DEFAULT_USER_SETTINGS);
+    await writeLocalSettings(uid, fallback);
+    return fallback;
   }
 
   const cloudSettings = await readCloudSettings(uid);
@@ -147,15 +129,14 @@ export async function loadUserSettings(uid: string): Promise<UserSettings> {
     return cloudSettings;
   }
 
-  if (localSettings) {
-    await writeCloudSettings(uid, localSettings);
-    return localSettings;
-  }
-
-  const defaults = normalizeSettings(DEFAULT_USER_SETTINGS);
+  const defaults = localSettings ?? normalizeSettings(DEFAULT_USER_SETTINGS);
   await writeLocalSettings(uid, defaults);
   await writeCloudSettings(uid, defaults);
   return defaults;
+}
+
+export async function loadUserSettings(uid: string): Promise<UserSettings> {
+  return ensureUserSettingsInitialized(uid);
 }
 
 export async function saveUserSettings(
