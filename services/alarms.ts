@@ -179,12 +179,25 @@ export async function loadUserAlarms(uid: string): Promise<Alarm[]> {
 
   if (cloudAlarms) {
     const localNotifMap = new Map(localAlarms.map((alarm) => [alarm.id, alarm.notifId]));
-    const merged = cloudAlarms.map((alarm) => ({
+    const cloudIdSet = new Set(cloudAlarms.map((alarm) => alarm.id));
+
+    const mergedFromCloud = cloudAlarms.map((alarm) => ({
       ...alarm,
       notifId: localNotifMap.get(alarm.id),
     }));
 
+    // Preserva alarmas locales que todavia no existen en la nube (sync diferido).
+    const localOnly = localAlarms.filter((alarm) => !cloudIdSet.has(alarm.id));
+    const merged = sortAlarms([...mergedFromCloud, ...localOnly]);
+
     await writeLocalAlarms(uid, merged);
+
+    // Si detectamos datos locales no presentes en nube, hacemos backfill.
+    if (localOnly.length > 0) {
+      await writeCloudAlarms(uid, merged);
+      await updateUserAlarmCount(uid, merged.length);
+    }
+
     return merged;
   }
 
