@@ -1,0 +1,69 @@
+"filename", "language", "JavaScript", "JSON with Comments", "Markdown", "TypeScript", "TypeScript JSX", "JSON", "XML", "comment", "blank", "total"
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\.idea\AlarmasApp.iml", "XML", 0, 0, 0, 0, 0, 0, 9, 0, 0, 9
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\.idea\caches\deviceStreaming.xml", "XML", 0, 0, 0, 0, 0, 0, 1358, 0, 0, 1358
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\.idea\markdown.xml", "XML", 0, 0, 0, 0, 0, 0, 8, 0, 0, 8
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\.idea\misc.xml", "XML", 0, 0, 0, 0, 0, 0, 6, 0, 0, 6
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\.idea\modules.xml", "XML", 0, 0, 0, 0, 0, 0, 8, 0, 0, 8
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\.idea\vcs.xml", "XML", 0, 0, 0, 0, 0, 0, 6, 0, 0, 6
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\AUDIO_SYSTEM_GUIDE.md", "Markdown", 0, 0, 209, 0, 0, 0, 0, 0, 67, 276
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\IMPLEMENTATION_SUMMARY.md", "Markdown", 0, 0, 176, 0, 0, 0, 0, 0, 48, 224
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\README.md", "Markdown", 0, 0, 31, 0, 0, 0, 0, 0, 20, 51
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\SETTINGS_EDITOR_GUIDE.md", "Markdown", 0, 0, 156, 0, 0, 0, 0, 0, 44, 200
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app.json", "JSON with Comments", 0, 63, 0, 0, 0, 0, 0, 0, 1, 64
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\_layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 4, 0, 0, 0, 1, 5
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\ajustes.tsx", "TypeScript JSX", 0, 0, 0, 0, 390, 0, 0, 7, 31, 428
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\alarmScreen.tsx", "TypeScript JSX", 0, 0, 0, 0, 127, 0, 0, 7, 21, 155
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\editAlarma.tsx", "TypeScript JSX", 0, 0, 0, 0, 519, 0, 0, 3, 28, 550
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\explore.tsx", "TypeScript JSX", 0, 0, 0, 0, 111, 0, 0, 0, 5, 116
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 676, 0, 0, 15, 77, 768
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\newAlarm.tsx", "TypeScript JSX", 0, 0, 0, 0, 192, 0, 0, 7, 30, 229
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\Login.tsx", "TypeScript JSX", 0, 0, 0, 0, 157, 0, 0, 0, 20, 177
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\_layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 31, 0, 0, 0, 6, 37
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\diet-setup.tsx", "TypeScript JSX", 0, 0, 0, 0, 481, 0, 0, 1, 56, 538
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 4, 0, 0, 0, 2, 6
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\modal.tsx", "TypeScript JSX", 0, 0, 0, 0, 26, 0, 0, 0, 4, 30
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\registro.tsx", "TypeScript JSX", 0, 0, 0, 0, 154, 0, 0, 0, 19, 173
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\styles\alarmScreen.styles.ts", "TypeScript", 0, 0, 0, 62, 0, 0, 0, 0, 3, 65
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\styles\diet-setup.styles.ts", "TypeScript", 0, 0, 0, 285, 0, 0, 0, 1, 4, 290
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\styles\index.styles.ts", "TypeScript", 0, 0, 0, 925, 0, 0, 0, 4, 7, 936
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\styles\login.styles.ts", "TypeScript", 0, 0, 0, 144, 0, 0, 0, 0, 4, 148
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\styles\newAlarm.styles.ts", "TypeScript", 0, 0, 0, 252, 0, 0, 0, 0, 4, 256
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\styles\registro.styles.ts", "TypeScript", 0, 0, 0, 185, 0, 0, 0, 0, 4, 189
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\calorie-chart.tsx", "TypeScript JSX", 0, 0, 0, 0, 90, 0, 0, 0, 10, 100
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\external-link.tsx", "TypeScript JSX", 0, 0, 0, 0, 21, 0, 0, 2, 3, 26
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\haptic-tab.tsx", "TypeScript JSX", 0, 0, 0, 0, 16, 0, 0, 1, 2, 19
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\hello-wave.tsx", "TypeScript JSX", 0, 0, 0, 0, 18, 0, 0, 0, 2, 20
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\parallax-scroll-view.tsx", "TypeScript JSX", 0, 0, 0, 0, 73, 0, 0, 0, 7, 80
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\sound-picker.tsx", "TypeScript JSX", 0, 0, 0, 0, 331, 0, 0, 6, 22, 359
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\themed-text.tsx", "TypeScript JSX", 0, 0, 0, 0, 55, 0, 0, 0, 6, 61
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\themed-view.tsx", "TypeScript JSX", 0, 0, 0, 0, 10, 0, 0, 0, 5, 15
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\ui\collapsible.tsx", "TypeScript JSX", 0, 0, 0, 0, 40, 0, 0, 0, 6, 46
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\ui\icon-symbol.ios.tsx", "TypeScript JSX", 0, 0, 0, 0, 31, 0, 0, 0, 2, 33
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\ui\icon-symbol.tsx", "TypeScript JSX", 0, 0, 0, 0, 26, 0, 0, 11, 5, 42
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\vibration-picker.tsx", "TypeScript JSX", 0, 0, 0, 0, 161, 0, 0, 5, 14, 180
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\constants\theme.ts", "TypeScript", 0, 0, 0, 41, 0, 0, 0, 8, 5, 54
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\eas.json", "JSON with Comments", 0, 21, 0, 0, 0, 0, 0, 0, 1, 22
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\eslint.config.js", "JavaScript", 8, 0, 0, 0, 0, 0, 0, 1, 2, 11
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\hooks\theme-context.tsx", "TypeScript JSX", 0, 0, 0, 0, 99, 0, 0, 0, 16, 115
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\hooks\use-alarm-sound.ts", "TypeScript", 0, 0, 0, 35, 0, 0, 0, 0, 8, 43
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\hooks\use-color-scheme.ts", "TypeScript", 0, 0, 0, 1, 0, 0, 0, 0, 1, 2
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\hooks\use-color-scheme.web.ts", "TypeScript", 0, 0, 0, 13, 0, 0, 0, 3, 6, 22
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\hooks\use-theme-color.ts", "TypeScript", 0, 0, 0, 14, 0, 0, 0, 4, 4, 22
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\hooks\use-theme.ts", "TypeScript", 0, 0, 0, 87, 0, 0, 0, 0, 13, 100
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\package-lock.json", "JSON", 0, 0, 0, 0, 0, 14062, 0, 0, 1, 14063
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\package.json", "JSON", 0, 0, 0, 0, 0, 58, 0, 0, 1, 59
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\scripts\reset-project.js", "JavaScript", 89, 0, 0, 0, 0, 0, 0, 10, 14, 113
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\alarms.ts", "TypeScript", 0, 0, 0, 195, 0, 0, 0, 4, 34, 233
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\audio.ts", "TypeScript", 0, 0, 0, 97, 0, 0, 0, 25, 15, 137
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\auth.ts", "TypeScript", 0, 0, 0, 106, 0, 0, 0, 0, 18, 124
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\diet-daily.ts", "TypeScript", 0, 0, 0, 284, 0, 0, 0, 0, 55, 339
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\firebase.ts", "TypeScript", 0, 0, 0, 25, 0, 0, 0, 1, 5, 31
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\session.ts", "TypeScript", 0, 0, 0, 61, 0, 0, 0, 0, 10, 71
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\sound-settings.ts", "TypeScript", 0, 0, 0, 34, 0, 0, 0, 0, 7, 41
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\user-diet-profile.ts", "TypeScript", 0, 0, 0, 199, 0, 0, 0, 6, 35, 240
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\user-profile.ts", "TypeScript", 0, 0, 0, 71, 0, 0, 0, 0, 9, 80
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\user-settings.ts", "TypeScript", 0, 0, 0, 156, 0, 0, 0, 0, 26, 182
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\user-sounds.ts", "TypeScript", 0, 0, 0, 69, 0, 0, 0, 16, 15, 100
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\vibration.ts", "TypeScript", 0, 0, 0, 56, 0, 0, 0, 2, 13, 71
+"c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\tsconfig.json", "JSON with Comments", 0, 17, 0, 0, 0, 0, 0, 0, 1, 18
+"Total", "-", 97, 101, 572, 3397, 3843, 14120, 1395, 150, 905, 24580

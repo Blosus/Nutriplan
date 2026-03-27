@@ -1,0 +1,112 @@
+Date : 2026-03-19 14:01:36
+Directory : c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master
+Total : 67 files,  23525 codes, 150 comments, 905 blanks, all 24580 lines
+
+Languages
++--------------------+------------+------------+------------+------------+------------+
+| language           | files      | code       | comment    | blank      | total      |
++--------------------+------------+------------+------------+------------+------------+
+| JSON               |          2 |     14,120 |          0 |          2 |     14,122 |
+| TypeScript JSX     |         26 |      3,843 |         65 |        400 |      4,308 |
+| TypeScript         |         24 |      3,397 |         74 |        305 |      3,776 |
+| XML                |          6 |      1,395 |          0 |          0 |      1,395 |
+| Markdown           |          4 |        572 |          0 |        179 |        751 |
+| JSON with Comments |          3 |        101 |          0 |          3 |        104 |
+| JavaScript         |          2 |         97 |         11 |         16 |        124 |
++--------------------+------------+------------+------------+------------+------------+
+
+Directories
++-----------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                          | files      | code       | comment    | blank      | total      |
++-----------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                             |         67 |     23,525 |        150 |        905 |     24,580 |
+| . (Files)                                                                                     |         10 |     14,801 |          1 |        186 |     14,988 |
+| .idea                                                                                         |          6 |      1,395 |          0 |          0 |      1,395 |
+| .idea (Files)                                                                                 |          5 |         37 |          0 |          0 |         37 |
+| .idea\caches                                                                                  |          1 |      1,358 |          0 |          0 |      1,358 |
+| app                                                                                           |         19 |      4,725 |         45 |        326 |      5,096 |
+| app (Files)                                                                                   |          6 |        853 |          1 |        107 |        961 |
+| app\(tabs)                                                                                    |          7 |      2,019 |         39 |        193 |      2,251 |
+| app\styles                                                                                    |          6 |      1,853 |          5 |         26 |      1,884 |
+| components                                                                                    |         12 |        872 |         25 |         84 |        981 |
+| components (Files)                                                                            |          9 |        775 |         14 |         71 |        860 |
+| components\ui                                                                                 |          3 |         97 |         11 |         13 |        121 |
+| constants                                                                                     |          1 |         41 |          8 |          5 |         54 |
+| hooks                                                                                         |          6 |        249 |          7 |         48 |        304 |
+| scripts                                                                                       |          1 |         89 |         10 |         14 |        113 |
+| services                                                                                      |         12 |      1,353 |         54 |        242 |      1,649 |
++-----------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-----------------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| filename                                                                                      | language           | code       | comment    | blank      | total      |
++-----------------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\.idea\AlarmasApp.iml                | XML                |          9 |          0 |          0 |          9 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\.idea\caches\deviceStreaming.xml    | XML                |      1,358 |          0 |          0 |      1,358 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\.idea\markdown.xml                  | XML                |          8 |          0 |          0 |          8 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\.idea\misc.xml                      | XML                |          6 |          0 |          0 |          6 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\.idea\modules.xml                   | XML                |          8 |          0 |          0 |          8 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\.idea\vcs.xml                       | XML                |          6 |          0 |          0 |          6 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\AUDIO_SYSTEM_GUIDE.md               | Markdown           |        209 |          0 |         67 |        276 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\IMPLEMENTATION_SUMMARY.md           | Markdown           |        176 |          0 |         48 |        224 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\README.md                           | Markdown           |         31 |          0 |         20 |         51 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\SETTINGS_EDITOR_GUIDE.md            | Markdown           |        156 |          0 |         44 |        200 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app.json                            | JSON with Comments |         63 |          0 |          1 |         64 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\_layout.tsx              | TypeScript JSX     |          4 |          0 |          1 |          5 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\ajustes.tsx              | TypeScript JSX     |        390 |          7 |         31 |        428 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\alarmScreen.tsx          | TypeScript JSX     |        127 |          7 |         21 |        155 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\editAlarma.tsx           | TypeScript JSX     |        519 |          3 |         28 |        550 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\explore.tsx              | TypeScript JSX     |        111 |          0 |          5 |        116 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\index.tsx                | TypeScript JSX     |        676 |         15 |         77 |        768 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\(tabs)\newAlarm.tsx             | TypeScript JSX     |        192 |          7 |         30 |        229 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\Login.tsx                       | TypeScript JSX     |        157 |          0 |         20 |        177 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\_layout.tsx                     | TypeScript JSX     |         31 |          0 |          6 |         37 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\diet-setup.tsx                  | TypeScript JSX     |        481 |          1 |         56 |        538 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\index.tsx                       | TypeScript JSX     |          4 |          0 |          2 |          6 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\modal.tsx                       | TypeScript JSX     |         26 |          0 |          4 |         30 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\registro.tsx                    | TypeScript JSX     |        154 |          0 |         19 |        173 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\styles\alarmScreen.styles.ts    | TypeScript         |         62 |          0 |          3 |         65 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\styles\diet-setup.styles.ts     | TypeScript         |        285 |          1 |          4 |        290 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\styles\index.styles.ts          | TypeScript         |        925 |          4 |          7 |        936 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\styles\login.styles.ts          | TypeScript         |        144 |          0 |          4 |        148 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\styles\newAlarm.styles.ts       | TypeScript         |        252 |          0 |          4 |        256 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\app\styles\registro.styles.ts       | TypeScript         |        185 |          0 |          4 |        189 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\calorie-chart.tsx        | TypeScript JSX     |         90 |          0 |         10 |        100 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\external-link.tsx        | TypeScript JSX     |         21 |          2 |          3 |         26 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\haptic-tab.tsx           | TypeScript JSX     |         16 |          1 |          2 |         19 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\hello-wave.tsx           | TypeScript JSX     |         18 |          0 |          2 |         20 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\parallax-scroll-view.tsx | TypeScript JSX     |         73 |          0 |          7 |         80 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\sound-picker.tsx         | TypeScript JSX     |        331 |          6 |         22 |        359 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\themed-text.tsx          | TypeScript JSX     |         55 |          0 |          6 |         61 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\themed-view.tsx          | TypeScript JSX     |         10 |          0 |          5 |         15 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\ui\collapsible.tsx       | TypeScript JSX     |         40 |          0 |          6 |         46 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\ui\icon-symbol.ios.tsx   | TypeScript JSX     |         31 |          0 |          2 |         33 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\ui\icon-symbol.tsx       | TypeScript JSX     |         26 |         11 |          5 |         42 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\components\vibration-picker.tsx     | TypeScript JSX     |        161 |          5 |         14 |        180 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\constants\theme.ts                  | TypeScript         |         41 |          8 |          5 |         54 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\eas.json                            | JSON with Comments |         21 |          0 |          1 |         22 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\eslint.config.js                    | JavaScript         |          8 |          1 |          2 |         11 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\hooks\theme-context.tsx             | TypeScript JSX     |         99 |          0 |         16 |        115 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\hooks\use-alarm-sound.ts            | TypeScript         |         35 |          0 |          8 |         43 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\hooks\use-color-scheme.ts           | TypeScript         |          1 |          0 |          1 |          2 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\hooks\use-color-scheme.web.ts       | TypeScript         |         13 |          3 |          6 |         22 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\hooks\use-theme-color.ts            | TypeScript         |         14 |          4 |          4 |         22 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\hooks\use-theme.ts                  | TypeScript         |         87 |          0 |         13 |        100 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\package-lock.json                   | JSON               |     14,062 |          0 |          1 |     14,063 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\package.json                        | JSON               |         58 |          0 |          1 |         59 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\scripts\reset-project.js            | JavaScript         |         89 |         10 |         14 |        113 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\alarms.ts                  | TypeScript         |        195 |          4 |         34 |        233 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\audio.ts                   | TypeScript         |         97 |         25 |         15 |        137 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\auth.ts                    | TypeScript         |        106 |          0 |         18 |        124 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\diet-daily.ts              | TypeScript         |        284 |          0 |         55 |        339 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\firebase.ts                | TypeScript         |         25 |          1 |          5 |         31 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\session.ts                 | TypeScript         |         61 |          0 |         10 |         71 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\sound-settings.ts          | TypeScript         |         34 |          0 |          7 |         41 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\user-diet-profile.ts       | TypeScript         |        199 |          6 |         35 |        240 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\user-profile.ts            | TypeScript         |         71 |          0 |          9 |         80 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\user-settings.ts           | TypeScript         |        156 |          0 |         26 |        182 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\user-sounds.ts             | TypeScript         |         69 |         16 |         15 |        100 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\services\vibration.ts               | TypeScript         |         56 |          2 |         13 |         71 |
+| c:\Users\Kmurt\Pictures\Nutriplan-master\Nutriplan-master\tsconfig.json                       | JSON with Comments |         17 |          0 |          1 |         18 |
+| Total                                                                                         |                    |     23,525 |        150 |        905 |     24,580 |
++-----------------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+

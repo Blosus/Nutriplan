@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { collection, doc, getDocs, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, doc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
 export type DietDailyLog = {
@@ -24,12 +24,6 @@ export type DietDailyHistoryItem = {
   mealsCount: number;
   goalMet: boolean;
   isToday: boolean;
-};
-
-export type DietRealtimePayload = {
-  today: DietDailyLog;
-  streak: DietStreakSummary;
-  recentHistory: DietDailyHistoryItem[];
 };
 
 type DailyLogRecord = Record<string, DietDailyLog>;
@@ -69,8 +63,8 @@ const normalizeDailyLog = (
   dateKey: string
 ): DietDailyLog => {
   const target = Math.max(0, Math.round(caloriesTarget));
-  const consumed = clamp(Math.round(Number(input.caloriesConsumed ?? 0)), 0, target);
-  const meals = clamp(Math.round(Number(input.mealsCount ?? 0)), 0, 5);
+  const consumed = Math.max(0, Math.round(Number(input.caloriesConsumed ?? 0)));
+  const meals = clamp(Math.round(Number(input.mealsCount ?? 1)), 1, 5);
   const goalMet = consumed >= target && meals >= 3;
 
   return {
@@ -314,67 +308,20 @@ export async function saveTodayDietTracking(
   };
 }
 
-export async function preservePreviousDaysTargetSnapshot(
-  uid: string,
-  caloriesTarget: number,
-  daysBack = 6
-): Promise<void> {
-  const logs = await loadMergedDietDaily(uid);
-  const todayKey = getTodayDateKey();
-  let changed = false;
-
-  for (let i = Math.max(1, daysBack); i >= 1; i--) {
-    const dateKey = addDays(todayKey, -i);
-    if (logs[dateKey]) {
-      continue;
-    }
-
-    const snapshot = normalizeDailyLog({}, caloriesTarget, dateKey);
-    logs[dateKey] = snapshot;
-    changed = true;
-  }
-
-  if (!changed) {
-    return;
-  }
-
-  await writeLocalDietDaily(uid, logs);
-
-  if (await canUseCloud(uid)) {
-    for (let i = Math.max(1, daysBack); i >= 1; i--) {
-      const dateKey = addDays(todayKey, -i);
-      const item = logs[dateKey];
-      if (item) {
-        await writeCloudDietDailyLog(uid, item);
-      }
-    }
-  }
-}
-
 export async function loadRecentDietHistory(
   uid: string,
   caloriesTarget: number,
   days = 7
 ): Promise<DietDailyHistoryItem[]> {
   const logs = await loadMergedDietDaily(uid);
-  return buildRecentHistoryFromLogs(logs, caloriesTarget, days);
-}
-
-function buildRecentHistoryFromLogs(
-  logs: DailyLogRecord,
-  caloriesTarget: number,
-  days: number
-): DietDailyHistoryItem[] {
   const totalDays = Math.max(1, Math.round(days));
   const todayKey = getTodayDateKey();
   const history: DietDailyHistoryItem[] = [];
 
   for (let i = totalDays - 1; i >= 0; i--) {
     const dateKey = addDays(todayKey, -i);
-    const existing = logs[dateKey];
-    const preservedTarget = existing?.caloriesTarget ?? caloriesTarget;
-    const base = existing
-      ? normalizeDailyLog(existing, preservedTarget, dateKey)
+    const base = logs[dateKey]
+      ? normalizeDailyLog(logs[dateKey], caloriesTarget, dateKey)
       : normalizeDailyLog({}, caloriesTarget, dateKey);
 
     history.push({
@@ -388,66 +335,4 @@ function buildRecentHistoryFromLogs(
   }
 
   return history;
-}
-
-export async function subscribeDietTrackingRealtime(
-  uid: string,
-  caloriesTarget: number,
-  onUpdate: (payload: DietRealtimePayload) => void
-): Promise<() => void> {
-  const todayKey = getTodayDateKey();
-
-  if (!(await canUseCloud(uid))) {
-    const today = normalizeDailyLog({}, caloriesTarget, todayKey);
-    onUpdate({
-      today,
-      streak: { currentStreak: 0, bestStreak: 0, completedDays: 0 },
-      recentHistory: buildRecentHistoryFromLogs({}, caloriesTarget, 7),
-    });
-    return () => {};
-  }
-
-  const dietRef = collection(db, USERS_COLLECTION, uid, DIET_SUBCOLLECTION);
-
-  const unsubscribe = onSnapshot(dietRef, async (snapshot) => {
-    const logs: DailyLogRecord = {};
-
-    snapshot.docs.forEach((item) => {
-      if (!item.id.startsWith(DAILY_DOC_PREFIX)) {
-        return;
-      }
-
-      const dateKey = item.id.replace(DAILY_DOC_PREFIX, "");
-      const data = item.data() as Partial<DietDailyLog>;
-      const target = Math.max(0, Number(data.caloriesTarget ?? 0));
-
-      logs[dateKey] = normalizeDailyLog(
-        {
-          ...data,
-          dateKey,
-          caloriesTarget: target,
-          updatedAtMs: Number(data.updatedAtMs ?? Date.now()),
-        },
-        target,
-        dateKey
-      );
-    });
-
-    let today = logs[todayKey]
-      ? normalizeDailyLog(logs[todayKey], logs[todayKey].caloriesTarget || caloriesTarget, todayKey)
-      : normalizeDailyLog({}, caloriesTarget, todayKey);
-
-    if (!logs[todayKey]) {
-      logs[todayKey] = today;
-      await writeCloudDietDailyLog(uid, today);
-    }
-
-    onUpdate({
-      today,
-      streak: computeStreak(logs),
-      recentHistory: buildRecentHistoryFromLogs(logs, caloriesTarget, 7),
-    });
-  });
-
-  return unsubscribe;
 }
