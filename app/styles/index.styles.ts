@@ -1037,6 +1037,68 @@ export const getIndexStyles = (colors: any) => {
       fontWeight: "600",
       fontFamily: textFont,
     },
+    nutritionActionsRow: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      marginBottom: 12,
+    },
+    nutritionActionButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: colors.accent,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      minHeight: 38,
+    },
+    nutritionActionButtonText: {
+      color: colors.background,
+      fontSize: 12,
+      fontWeight: "700",
+      fontFamily: textFont,
+    },
+    customFoodFormCard: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      backgroundColor: colors.surface,
+      padding: 12,
+      gap: 10,
+      marginBottom: 12,
+    },
+    customFoodFormTitle: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: "700",
+      fontFamily: textFont,
+    },
+    customFoodGridRow: {
+      flexDirection: "row",
+      gap: 8,
+    },
+    customFoodInput: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      minHeight: 40,
+      paddingHorizontal: 10,
+      color: colors.text,
+      backgroundColor: colors.background,
+      fontFamily: textFont,
+      fontSize: 14,
+    },
+    customFoodInputHalf: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      minHeight: 40,
+      paddingHorizontal: 10,
+      color: colors.text,
+      backgroundColor: colors.background,
+      fontFamily: textFont,
+      fontSize: 14,
+    },
     nutritionCategoriesRow: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -1075,6 +1137,24 @@ export const getIndexStyles = (colors: any) => {
       paddingVertical: 12,
       paddingHorizontal: 12,
       gap: 10,
+    },
+    nutritionDeleteButton: {
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      borderWidth: 1,
+      borderColor: "rgba(179,58,58,0.35)",
+      borderRadius: 999,
+      backgroundColor: "rgba(179,58,58,0.1)",
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    nutritionDeleteButtonText: {
+      color: "#B33A3A",
+      fontSize: 11,
+      fontWeight: "700",
+      fontFamily: textFont,
     },
     nutritionCardHeader: {
       flexDirection: "row",
@@ -1277,3 +1357,4 @@ export const getIndexStyles = (colors: any) => {
 
 // Exportamos también screenWidth por si se necesita en otros lugares
 export { screenWidth };
+

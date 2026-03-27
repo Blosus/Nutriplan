@@ -1,178 +1,69 @@
 import CalorieChart from "@/components/calorie-chart";
 import { useTheme } from "@/hooks/theme-context";
 import {
-  Alarm,
-  cancelAlarmNotifications,
-  getAlarmWeekdaysSummary,
-  loadUserAlarms,
-  readCachedAlarms,
-  saveUserAlarms,
-  scheduleAlarmNotifications,
+    Alarm,
+    cancelAlarmNotifications,
+    getAlarmWeekdaysSummary,
+    loadUserAlarms,
+    readCachedAlarms,
+    saveUserAlarms,
+    scheduleAlarmNotifications,
 } from "@/services/alarms";
 import {
-  DietDailyHistoryItem,
-  DietDailyLog,
-  DietStreakSummary,
-  loadRecentDietHistory,
-  loadTodayDietTracking,
-  saveTodayDietTracking,
+    DietDailyHistoryItem,
+    DietDailyLog,
+    DietStreakSummary,
+    loadRecentDietHistory,
+    loadTodayDietTracking,
+    saveTodayDietTracking,
 } from "@/services/diet-daily";
+import {
+    FoodCategory,
+    FoodItem,
+    getFoodDatabase,
+} from "@/services/food-database";
 import { getCurrentSessionUser } from "@/services/session";
 import {
-  DietProfile,
-  getExistingUserDietProfile,
-  isDietProfileComplete,
+    deleteCustomFood,
+    getUserCustomFoods,
+} from "@/services/user-custom-foods";
+import {
+    DietProfile,
+    getExistingUserDietProfile,
+    isDietProfileComplete,
 } from "@/services/user-diet-profile";
 import {
-  Feather,
-  FontAwesome5,
-  Ionicons,
-  MaterialIcons,
+    Feather,
+    FontAwesome5,
+    Ionicons,
+    MaterialIcons,
 } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  ScrollView,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    ScrollView,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { getIndexStyles } from "../styles/index.styles";
 
-type FoodNutritionItem = {
-  id: string;
-  category:
-    | "FRUTAS"
-    | "VERDURAS"
-    | "CARNES"
-    | "CEREALES"
-    | "LACTEOS"
-    | "GRASAS";
-  name: string;
-  referenceLabel: string;
-  baseGrams: number;
-  calories: number;
-  proteinGrams: number;
-  fatsGrams: number;
-  carbsGrams: number;
-};
-
-const FOOD_NUTRITION_CATALOG: FoodNutritionItem[] = [
-  {
-    id: "pollo-plancha-100g",
-    category: "CARNES",
-    name: "Pechuga de pollo a la plancha",
-    referenceLabel: "100 g",
-    baseGrams: 100,
-    calories: 165,
-    proteinGrams: 31,
-    fatsGrams: 3.6,
-    carbsGrams: 0,
-  },
-  {
-    id: "arroz-cocido-100g",
-    category: "CEREALES",
-    name: "Arroz blanco cocido",
-    referenceLabel: "100 g",
-    baseGrams: 100,
-    calories: 130,
-    proteinGrams: 2.4,
-    fatsGrams: 0.3,
-    carbsGrams: 28,
-  },
-  {
-    id: "huevo-unidad",
-    category: "CARNES",
-    name: "Huevo entero",
-    referenceLabel: "1 unidad (50 g)",
-    baseGrams: 50,
-    calories: 78,
-    proteinGrams: 6.3,
-    fatsGrams: 5.3,
-    carbsGrams: 0.6,
-  },
-  {
-    id: "avena-40g",
-    category: "CEREALES",
-    name: "Avena en hojuelas",
-    referenceLabel: "40 g",
-    baseGrams: 40,
-    calories: 156,
-    proteinGrams: 6.8,
-    fatsGrams: 2.8,
-    carbsGrams: 26.5,
-  },
-  {
-    id: "platano-mediano",
-    category: "FRUTAS",
-    name: "Platano mediano",
-    referenceLabel: "1 unidad (118 g)",
-    baseGrams: 118,
-    calories: 105,
-    proteinGrams: 1.3,
-    fatsGrams: 0.4,
-    carbsGrams: 27,
-  },
-  {
-    id: "brocoli-vapor-100g",
-    category: "VERDURAS",
-    name: "Brocoli al vapor",
-    referenceLabel: "100 g",
-    baseGrams: 100,
-    calories: 35,
-    proteinGrams: 2.4,
-    fatsGrams: 0.4,
-    carbsGrams: 7.2,
-  },
-  {
-    id: "salmon-120g",
-    category: "CARNES",
-    name: "Salmon al horno",
-    referenceLabel: "120 g",
-    baseGrams: 120,
-    calories: 250,
-    proteinGrams: 25.8,
-    fatsGrams: 15.4,
-    carbsGrams: 0,
-  },
-  {
-    id: "yogur-griego-170g",
-    category: "LACTEOS",
-    name: "Yogur griego natural",
-    referenceLabel: "170 g",
-    baseGrams: 170,
-    calories: 146,
-    proteinGrams: 17,
-    fatsGrams: 4,
-    carbsGrams: 8,
-  },
-  {
-    id: "palta-50g",
-    category: "GRASAS",
-    name: "Palta",
-    referenceLabel: "50 g",
-    baseGrams: 50,
-    calories: 80,
-    proteinGrams: 1,
-    fatsGrams: 7.4,
-    carbsGrams: 4.2,
-  },
-];
-
 const NUTRITION_CATEGORIES = [
   { key: "ALL", label: "Todas" },
-  { key: "FRUTAS", label: "Frutas" },
-  { key: "VERDURAS", label: "Verduras" },
-  { key: "CARNES", label: "Carnes" },
-  { key: "CEREALES", label: "Cereales" },
-  { key: "LACTEOS", label: "Lácteos" },
-  { key: "GRASAS", label: "Grasas" },
+  { key: "verduras", label: "Verduras" },
+  { key: "frutas", label: "Frutas" },
+  { key: "cereales", label: "Cereales" },
+  { key: "grasas", label: "Grasas" },
+  { key: "leguminosas", label: "Leguminosas" },
+  { key: "lacteos", label: "Lácteos" },
+  { key: "chucherias", label: "Chucherías" },
+  { key: "custom", label: "Mis alimentos" },
 ] as const;
 
 type NutritionCategoryFilter = (typeof NUTRITION_CATEGORIES)[number]["key"];
@@ -192,6 +83,16 @@ const parseGramsInput = (value: string) => {
   }
 
   return Math.min(3000, Math.round(parsed * 10) / 10);
+};
+
+const FOOD_CATEGORY_LABELS: Record<FoodCategory, string> = {
+  frutas: "Frutas",
+  verduras: "Verduras",
+  cereales: "Cereales",
+  grasas: "Grasas",
+  leguminosas: "Leguminosas",
+  lacteos: "Lácteos",
+  chucherias: "Chucherías",
 };
 
 const formatMacroValue = (value: number) => {
@@ -230,15 +131,12 @@ export default function HomeScreen() {
     useState<NutritionCategoryFilter>("ALL");
   const [nutritionGramsById, setNutritionGramsById] = useState<
     Record<string, string>
-  >(() => {
-    return FOOD_NUTRITION_CATALOG.reduce<Record<string, string>>(
-      (acc, item) => {
-        acc[item.id] = String(item.baseGrams);
-        return acc;
-      },
-      {},
-    );
-  });
+  >({});
+  const [allFoodItems, setAllFoodItems] = useState<FoodItem[]>([]);
+  const [isLoadingFoods, setIsLoadingFoods] = useState(true);
+  const [removingCustomFoodId, setRemovingCustomFoodId] = useState<
+    string | null
+  >(null);
   const latestLoadRequestRef = useRef(0);
 
   const weekdayShort = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
@@ -393,10 +291,26 @@ export default function HomeScreen() {
     setIsLoadingDietStatus(false);
   };
 
+  const loadFoods = async () => {
+    setIsLoadingFoods(true);
+    try {
+      const sessionUser = await getCurrentSessionUser();
+      const uid = sessionUser?.uid ?? "guest";
+      const [dbItems, customItems] = await Promise.all([
+        getFoodDatabase(),
+        getUserCustomFoods(uid),
+      ]);
+      setAllFoodItems([...dbItems, ...customItems]);
+    } finally {
+      setIsLoadingFoods(false);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       void loadAlarms();
       void loadDietStatus();
+      void loadFoods();
     }, []),
   );
 
@@ -429,7 +343,7 @@ export default function HomeScreen() {
       Notifications.addNotificationResponseReceivedListener((response) => {
         const alarmId = response.notification.request.content.data?.alarmId;
         if (alarmId) {
-          router.push(`/alarmScreen?id=${alarmId}`);
+          router.push("/alarmScreen?id=" + alarmId);
         }
       });
 
@@ -437,7 +351,7 @@ export default function HomeScreen() {
       (notification) => {
         const alarmId = notification.request.content.data?.alarmId;
         if (alarmId) {
-          router.push(`/alarmScreen?id=${alarmId}`);
+          router.push("/alarmScreen?id=" + alarmId);
         }
       },
     );
@@ -501,28 +415,22 @@ export default function HomeScreen() {
   const normalizedNutritionSearch = normalizeSearchText(nutritionSearchText);
   const hasNutritionSearch = normalizedNutritionSearch.length > 0;
   const hasCategoryFilter = selectedNutritionCategory !== "ALL";
-  const visibleNutritionItems = (
-    hasNutritionSearch || hasCategoryFilter
-      ? FOOD_NUTRITION_CATALOG.filter((item) => {
-          const normalizedName = normalizeSearchText(item.name);
-          const normalizedReference = normalizeSearchText(item.referenceLabel);
-          const categoryMatches =
-            selectedNutritionCategory === "ALL" ||
-            item.category === selectedNutritionCategory;
-          if (!categoryMatches) {
-            return false;
-          }
-          if (!hasNutritionSearch) {
-            return true;
-          }
-
-          return (
-            normalizedName.includes(normalizedNutritionSearch) ||
-            normalizedReference.includes(normalizedNutritionSearch)
-          );
-        })
-      : FOOD_NUTRITION_CATALOG
-  ).slice(0, hasNutritionSearch || hasCategoryFilter ? 12 : 6);
+  const visibleNutritionItems = (() => {
+    let items = allFoodItems;
+    if (selectedNutritionCategory === "custom") {
+      items = items.filter((item) => item.id.startsWith("custom_"));
+    } else if (selectedNutritionCategory !== "ALL") {
+      items = items.filter(
+        (item) => item.category === selectedNutritionCategory,
+      );
+    }
+    if (hasNutritionSearch) {
+      items = items.filter((item) =>
+        normalizeSearchText(item.name).includes(normalizedNutritionSearch),
+      );
+    }
+    return items.slice(0, hasNutritionSearch || hasCategoryFilter ? 50 : 20);
+  })();
   const dietInsights = buildDietInsights(dietProfile);
 
   const handleSaveDietProgress = async () => {
@@ -584,6 +492,38 @@ export default function HomeScreen() {
     Alert.alert(
       "Ayuda calorias",
       "Ingresa una estimación de lo que comiste hoy. Puedes usar etiquetas nutricionales o una app para sumar calorías.",
+    );
+  };
+
+  const handleDeleteCustomFood = async (food: FoodItem) => {
+    Alert.alert(
+      "Eliminar alimento",
+      `¿Seguro que deseas eliminar \"${food.name}\"?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            const sessionUser = await getCurrentSessionUser();
+            const uid = sessionUser?.uid ?? "guest";
+            setRemovingCustomFoodId(food.id);
+            try {
+              await deleteCustomFood(uid, food.id);
+              setAllFoodItems((prev) =>
+                prev.filter((item) => item.id !== food.id),
+              );
+              setNutritionGramsById((prev) => {
+                const next = { ...prev };
+                delete next[food.id];
+                return next;
+              });
+            } finally {
+              setRemovingCustomFoodId(null);
+            }
+          },
+        },
+      ],
     );
   };
 
@@ -777,10 +717,20 @@ export default function HomeScreen() {
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Consulta nutricional</Text>
           <Text style={styles.dailyStatusText}>
-            Busca una comida para ver calorías, proteínas, grasas y
-            carbohidratos. Actualmente se usan datos de ejemplo para definir la
-            estructura del módulo.
+            Busca alimentos y ajusta los gramos para ver calorías y macros.
           </Text>
+
+          <View style={styles.nutritionActionsRow}>
+            <TouchableOpacity
+              style={styles.nutritionActionButton}
+              onPress={() => router.push("/new-food")}
+            >
+              <Ionicons name="add" size={16} color={colors.background} />
+              <Text style={styles.nutritionActionButtonText}>
+                Agregar alimento
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.nutritionSearchRow}>
             <Ionicons name="search" size={18} color={colors.accent} />
@@ -819,14 +769,17 @@ export default function HomeScreen() {
             })}
           </View>
 
-          {visibleNutritionItems.length === 0 ? (
+          {isLoadingFoods ? (
+            <View style={styles.nutritionEmptyState}>
+              <ActivityIndicator size="small" color={colors.accent} />
+              <Text style={styles.nutritionEmptyTitle}>
+                Cargando alimentos...
+              </Text>
+            </View>
+          ) : visibleNutritionItems.length === 0 ? (
             <View style={styles.nutritionEmptyState}>
               <Text style={styles.nutritionEmptyTitle}>
                 Sin resultados para esta busqueda
-              </Text>
-              <Text style={styles.nutritionEmptyText}>
-                Prueba con otro nombre de comida o crea una fuente de datos real
-                para ampliar los registros.
               </Text>
             </View>
           ) : (
@@ -835,17 +788,23 @@ export default function HomeScreen() {
                 <View key={item.id} style={styles.nutritionCard}>
                   {(() => {
                     const typedGramsText =
-                      nutritionGramsById[item.id] ?? String(item.baseGrams);
+                      nutritionGramsById[item.id] ??
+                      String(item.portion?.gramos ?? 100);
                     const gramsValue =
-                      parseGramsInput(typedGramsText) ?? item.baseGrams;
-                    const factor = gramsValue / item.baseGrams;
-                    const caloriesValue = Math.round(item.calories * factor);
+                      parseGramsInput(typedGramsText) ??
+                      item.portion?.gramos ??
+                      100;
+                    const factor = gramsValue / 100;
+                    const caloriesValue = Math.round(item.kcal * factor);
                     const proteinValue =
-                      Math.round(item.proteinGrams * factor * 10) / 10;
-                    const fatsValue =
-                      Math.round(item.fatsGrams * factor * 10) / 10;
+                      Math.round(item.protein * factor * 10) / 10;
+                    const fatsValue = Math.round(item.fats * factor * 10) / 10;
                     const carbsValue =
-                      Math.round(item.carbsGrams * factor * 10) / 10;
+                      Math.round(item.carbs * factor * 10) / 10;
+                    const referenceLabel = item.portion
+                      ? `${item.portion.cantidad} ${item.portion.unidad} (${item.portion.gramos} g)`
+                      : "100 g";
+                    const isCustom = item.id.startsWith("custom_");
 
                     return (
                       <>
@@ -855,7 +814,8 @@ export default function HomeScreen() {
                               {item.name}
                             </Text>
                             <Text style={styles.nutritionServingText}>
-                              Referencia: {item.referenceLabel}
+                              {FOOD_CATEGORY_LABELS[item.category]} • Ref:{" "}
+                              {referenceLabel}
                             </Text>
                           </View>
                           <View style={styles.nutritionCaloriesBadge}>
@@ -867,6 +827,29 @@ export default function HomeScreen() {
                             </Text>
                           </View>
                         </View>
+
+                        {isCustom && (
+                          <TouchableOpacity
+                            style={styles.nutritionDeleteButton}
+                            onPress={() => handleDeleteCustomFood(item)}
+                            disabled={removingCustomFoodId === item.id}
+                          >
+                            {removingCustomFoodId === item.id ? (
+                              <ActivityIndicator size="small" color="#B33A3A" />
+                            ) : (
+                              <>
+                                <Ionicons
+                                  name="trash-outline"
+                                  size={14}
+                                  color="#B33A3A"
+                                />
+                                <Text style={styles.nutritionDeleteButtonText}>
+                                  Eliminar
+                                </Text>
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        )}
 
                         <View style={styles.nutritionGramsRow}>
                           <Text style={styles.nutritionGramsLabel}>
@@ -883,7 +866,7 @@ export default function HomeScreen() {
                               }
                               keyboardType="decimal-pad"
                               style={styles.nutritionGramsInput}
-                              placeholder={String(item.baseGrams)}
+                              placeholder={String(item.portion?.gramos ?? 100)}
                               placeholderTextColor={placeholderColor}
                             />
                             <Text style={styles.nutritionGramsSuffix}>g</Text>
@@ -923,11 +906,6 @@ export default function HomeScreen() {
               ))}
             </View>
           )}
-
-          <Text style={styles.nutritionFootnote}>
-            Próximo paso sugerido: reemplazar este catálogo local por un JSON,
-            API o base de datos para consultas dinámicas.
-          </Text>
         </View>
 
         <View style={styles.sectionCard}>
